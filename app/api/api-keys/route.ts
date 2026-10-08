@@ -10,7 +10,7 @@ import { humanError } from "@/lib/llm";
 const MAX_KEYS_PER_USER = 10;
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

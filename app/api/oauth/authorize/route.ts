@@ -80,7 +80,7 @@ export async function GET(request: Request) {
   if (dataScopesOf(granted).length === 0) return fail("invalid_scope");
 
   // Identify the approving user via the existing Supabase cookie session.
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

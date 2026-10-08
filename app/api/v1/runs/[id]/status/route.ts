@@ -8,10 +8,8 @@ export const dynamic = "force-dynamic";
 // GET /api/v1/runs/:id/status — the bare run row, for polling background runs.
 // The report route recomputes aggregate math over every response; this one is
 // a single row read, cheap enough to hit every few seconds.
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "runs:read", "v1");
   if (auth instanceof Response) return auth;
 

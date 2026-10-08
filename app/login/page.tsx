@@ -23,11 +23,12 @@ const bullets = [
   },
 ];
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: { next?: string; mode?: string; error?: string };
-}) {
+export default async function LoginPage(
+  props: {
+    searchParams: Promise<{ next?: string; mode?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const next = typeof searchParams.next === "string" ? searchParams.next : undefined;
   const mode = typeof searchParams.mode === "string" ? searchParams.mode : undefined;
   // Set by /auth/callback when a provider hand-off or code exchange fails.

@@ -144,7 +144,8 @@ function ColumnHeader({ children, className }: { children: React.ReactNode; clas
   );
 }
 
-export default async function AdminAccountPage({ params }: { params: { id: string } }) {
+export default async function AdminAccountPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const admin = await requireAdmin();
   if (!admin) notFound();
   if (!UUID_RE.test(params.id)) notFound();

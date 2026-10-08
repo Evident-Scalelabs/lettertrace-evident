@@ -13,7 +13,7 @@ import type { Schedule } from "@/lib/types";
 // from the body — so a control that only wants to flip the schedule can't
 // safely go through it.
 export async function PATCH(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

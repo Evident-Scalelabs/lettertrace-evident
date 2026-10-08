@@ -101,7 +101,7 @@ describe("PUT /api/v1/keys/:provider", () => {
         method: "PUT",
         body: body === undefined ? undefined : JSON.stringify(body),
       }),
-      { params: { provider } },
+      { params: Promise.resolve({ provider }) },
     );
 
   it("403s a token without keys:write, even one that may write projects", async () => {
@@ -192,7 +192,7 @@ describe("PUT /api/v1/keys/:provider", () => {
 describe("DELETE /api/v1/keys/:provider", () => {
   const del = (provider: string) =>
     deleteKeyRoute(req(`/api/v1/keys/${provider}`, { method: "DELETE" }), {
-      params: { provider },
+      params: Promise.resolve({ provider }),
     });
 
   it("403s a token without keys:write", async () => {

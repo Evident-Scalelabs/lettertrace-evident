@@ -92,7 +92,8 @@ function ScheduleChart({ series, caption }: { series: SchedulePoint[]; caption: 
 
 type SP = Record<string, string | string[] | undefined>;
 
-export default async function ConversionsPage({ searchParams }: { searchParams: SP }) {
+export default async function ConversionsPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const admin = await requireAdmin();
   if (!admin) notFound();
 

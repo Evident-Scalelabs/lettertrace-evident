@@ -25,10 +25,8 @@ export const dynamic = "force-dynamic";
 // (access logs record those verbatim), never a path segment — and is never
 // echoed back. `checks` in the response is the part worth reading: it says, per
 // engine, whether this credential can carry a grounded measurement.
-export async function PUT(
-  request: Request,
-  { params }: { params: { router: string } },
-) {
+export async function PUT(request: Request, props: { params: Promise<{ router: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "keys:write", "v1");
   if (auth instanceof Response) return auth;
 
@@ -95,10 +93,8 @@ export async function PUT(
 
 // DELETE /api/v1/router-keys/:router — forget the stored credential.
 // Auth: Bearer token with the "keys:write" scope.
-export async function DELETE(
-  request: Request,
-  { params }: { params: { router: string } },
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ router: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "keys:write", "v1");
   if (auth instanceof Response) return auth;
 

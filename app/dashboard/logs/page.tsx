@@ -15,8 +15,9 @@ function str(v: string | string[] | undefined): string | undefined {
   return s && s.length > 0 ? s : undefined;
 }
 
-export default async function LogsPage({ searchParams }: { searchParams: SP }) {
-  const supabase = createClient();
+export default async function LogsPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

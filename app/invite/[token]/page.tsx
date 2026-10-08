@@ -65,9 +65,10 @@ function InviteProblem({
   );
 }
 
-export default async function InvitePage({ params }: { params: { token: string } }) {
+export default async function InvitePage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const token = decodeURIComponent(params.token);
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

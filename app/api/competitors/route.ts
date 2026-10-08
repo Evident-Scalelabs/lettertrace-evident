@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logDashboard } from "@/lib/activity";
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

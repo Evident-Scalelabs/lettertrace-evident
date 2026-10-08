@@ -172,7 +172,7 @@ export default function LandingPage() {
             <a href="#features" className="transition hover:text-ink">Features</a>
             <a href="#open-source" className="transition hover:text-ink">Open source</a>
             {blogConfigured ? (
-              <a href="/blog" className="transition hover:text-ink">Blog</a>
+              <Link href="/blog" className="transition hover:text-ink">Blog</Link>
             ) : null}
           </nav>
           <div className="flex items-center gap-2">

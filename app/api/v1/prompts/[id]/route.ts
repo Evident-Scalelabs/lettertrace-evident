@@ -10,10 +10,8 @@ export const dynamic = "force-dynamic";
 // Body: { is_active?: boolean, target_url?: string | null }. target_url maps
 // the prompt to the page it was written to surface (per-URL cited-hit rates
 // in the run report); null clears the mapping.
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:write", "v1");
   if (auth instanceof Response) return auth;
 

@@ -96,7 +96,7 @@ async function logSuggestFailure(
 // screen 1 asks for a URL and nothing else. A caller may still pass one (the
 // user editing it and asking for a re-read), and theirs wins.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

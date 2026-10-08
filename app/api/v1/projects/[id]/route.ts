@@ -8,10 +8,8 @@ export const dynamic = "force-dynamic";
 
 // GET /api/v1/projects/:id — one project's settings (the list route trims the
 // same way; this is the single-project read that was oddly missing).
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:read", "v1");
   if (auth instanceof Response) return auth;
 
@@ -36,10 +34,8 @@ export async function GET(
 // use_web_search, replicates, default_provider, default_model. Replicates
 // apply from the NEXT run; schedule is not accepted (API callers orchestrate
 // their own cadence).
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:write", "v1");
   if (auth instanceof Response) return auth;
 

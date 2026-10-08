@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // exists so the card can refresh itself after an invite or a removal without a
 // full page reload.
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

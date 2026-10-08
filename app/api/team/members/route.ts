@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 // (transfer), and pretending "remove the owner" means that would be a way to
 // orphan a project's data.
 export async function DELETE(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

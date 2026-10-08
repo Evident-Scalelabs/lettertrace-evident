@@ -39,7 +39,8 @@ interface SourceRow {
   is_owned: boolean;
 }
 
-export default async function AdminRunPage({ params }: { params: { id: string } }) {
+export default async function AdminRunPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const admin = await requireAdmin();
   if (!admin) notFound();
   if (!UUID_RE.test(params.id)) notFound();

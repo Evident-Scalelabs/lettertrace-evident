@@ -40,7 +40,7 @@ function toStringArray(value: unknown): string[] {
 // and how it spends the free trial — lives in lib/onboard, shared with the
 // API's one-shot POST /api/v1/onboard so the two can't drift.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

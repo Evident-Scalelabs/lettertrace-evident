@@ -7,10 +7,8 @@ import { humanError } from "@/lib/llm";
 export const dynamic = "force-dynamic";
 
 // GET /api/v1/projects/:id/prompts — the project's prompts with topic names.
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:read", "v1");
   if (auth instanceof Response) return auth;
 
@@ -32,10 +30,8 @@ export async function GET(
 
 // POST /api/v1/projects/:id/prompts — bulk-add prompts, get-or-creating each
 // topic by name. Body: { prompts: [{ text, topic }] }
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:write", "v1");
   if (auth instanceof Response) return auth;
 

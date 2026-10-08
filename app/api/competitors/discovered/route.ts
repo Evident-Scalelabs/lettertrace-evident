@@ -19,7 +19,7 @@ const ANSWER_LIMIT = 200;
 // already gave are sitting in `responses`, and mention detection throws away
 // every name that isn't on the competitor list.
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -106,7 +106,7 @@ describe("suggestion routes hand the resolved route to the model call", () => {
 
   it("POST /api/topics/:id/generate", async () => {
     const res = await generate.POST(req("/api/topics/topic-1/generate", { count: 3 }), {
-      params: { id: "topic-1" },
+      params: Promise.resolve({ id: "topic-1" }),
     });
     expect(res.status).toBe(200);
     expect(generateVariations).toHaveBeenCalledWith(routed);

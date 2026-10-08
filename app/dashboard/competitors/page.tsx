@@ -10,7 +10,7 @@ import { CompetitorsClient } from "./competitors-client";
 export const dynamic = "force-dynamic";
 
 export default async function CompetitorsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

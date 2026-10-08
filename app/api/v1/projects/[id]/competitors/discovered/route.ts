@@ -10,10 +10,8 @@ export const dynamic = "force-dynamic";
 // answers named that this project doesn't track. Candidates, not truth: the
 // caller confirms which become tracked competitors (POST ../competitors).
 // Reads text already in the database — no provider call, no key needed.
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:read", "v1");
   if (auth instanceof Response) return auth;
 

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // Deliberately ungated. Setting up a brand is configuration; the free-run
 // allowance is counted per account, so extra orgs cannot spend more of it.
 export default async function NewOrganizationPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

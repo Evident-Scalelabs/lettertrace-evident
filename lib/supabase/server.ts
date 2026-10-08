@@ -8,8 +8,8 @@ export { createServiceClient } from "./service";
 // signed-in user). Use inside Server Components, Route Handlers, Server Actions.
 // Wrapped in React cache() so the layout and page of one request share a single
 // client instance — which also lets the cached data helpers dedupe their reads.
-export const createClient = cache(function createClient() {
-  const cookieStore = cookies();
+export const createClient = cache(async function createClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,7 +44,7 @@ export const createClient = cache(function createClient() {
 
 // Convenience: the signed-in user (or null). Deduped per request.
 export const getUser = cache(async function getUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
