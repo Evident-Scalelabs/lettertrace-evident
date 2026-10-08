@@ -1,4 +1,4 @@
-import { Sparkles, Users, TrendingUp } from "lucide-react";
+import { MessagesSquare, Users, TrendingUp } from "lucide-react";
 import { Card, CardBody } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { AuthForm } from "./auth-form";
@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 
 const bullets = [
   {
-    icon: Sparkles,
-    title: "Bring your own key",
-    body: "Run prompts against Claude, ChatGPT, or Gemini with your own API key, no middleman.",
+    icon: MessagesSquare,
+    title: "Follow your topics",
+    body: "Track the questions people ask and review how your brand appears in the answers.",
   },
   {
     icon: Users,
@@ -38,32 +38,23 @@ export default async function LoginPage(
     <main className="flex min-h-screen bg-paper">
       {/* Left: branded panel */}
       <aside className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-paper-shade px-12 py-14 lg:flex">
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded bg-butter/50 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded bg-mint/40 blur-3xl"
-          aria-hidden
-        />
-
         <div className="relative">
           <Logo />
         </div>
 
         <div className="relative max-w-md">
-          <h1 className="font-serif text-4xl font-semibold leading-tight text-ink">
+          <h1 className="font-sans text-4xl font-semibold leading-tight text-ink">
             Monitor your brand across AI answers.
           </h1>
           <p className="mt-4 text-base text-ink-soft">
-            Lettertrace watches how often you, and your competitors, show up when people ask
+            Your Evident workspace brings together how you and your competitors appear when people ask
             AI assistants for recommendations.
           </p>
 
           <ul className="mt-10 space-y-5">
             {bullets.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex gap-3.5">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded bg-terracotta/12 text-terracotta-dark">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded bg-indigo-400/10 text-indigo-400">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
@@ -76,7 +67,7 @@ export default async function LoginPage(
         </div>
 
         <p className="relative text-xs text-ink-faint">
-          Open-source. Your keys stay yours.
+          Evident · AI Presence · Built on Lettertrace
         </p>
       </aside>
 

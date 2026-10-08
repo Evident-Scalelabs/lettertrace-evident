@@ -6,6 +6,10 @@ import { RB2BPixel } from "@/components/rb2b-pixel";
 import { PostHogAnalytics } from "@/components/posthog";
 import { publicEnvScript } from "@/lib/public-env";
 
+// This layout persists during client navigation, so every entry page must
+// receive the deployment's public browser config at request time.
+export const dynamic = "force-dynamic";
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
@@ -31,31 +35,19 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Lettertrace: Monitor how AI talks about your brand",
-    template: "%s · Lettertrace",
+    default: "Evident · AI Presence",
+    template: "%s · Evident AI Presence",
   },
   description:
-    "Open-source, bring-your-own-key monitoring for how your brand shows up in AI assistant answers. Track topics, generate prompt variations, watch trends, and benchmark competitors.",
+    "Review your brand in AI answers, compare competitors, and inspect the evidence behind your monitoring results.",
   openGraph: {
-    title: "Lettertrace: Monitor how AI talks about your brand",
-    description:
-      "Open-source, BYOK AI mention monitoring. Track topics, generate prompt variations, watch trends, and benchmark competitors.",
+    title: "Evident · AI Presence",
+    description: "Your workspace for brand mentions, monitoring topics, and AI answer evidence.",
     url: siteUrl,
-    siteName: "Lettertrace",
+    siteName: "Evident",
     type: "website",
-    images: [{ url: "/ogImage.png", width: 1200, height: 630, alt: "Lettertrace" }],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Lettertrace: Monitor how AI talks about your brand",
-    description: "Open-source, BYOK monitoring of how AI answers describe your brand.",
-    images: ["/ogImage.png"],
-  },
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/apple-icon.png",
-  },
+  icons: { icon: "/evident-icon.svg" },
 };
 
 export default function RootLayout({

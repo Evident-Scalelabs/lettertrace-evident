@@ -4,8 +4,6 @@ import { DashboardNav, type NavReport } from "@/components/dashboard/nav";
 import { SidebarShell } from "@/components/dashboard/sidebar-shell";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 import { SignOutButton } from "@/components/dashboard/signout";
-import { WhyFree } from "@/components/dashboard/why-free";
-import { ProductCta } from "@/components/dashboard/product-cta";
 import { TrialBanner } from "@/components/dashboard/trial-banner";
 import { LetterproveAttest } from "@/components/letterprove-attest";
 import { PostHogIdentify } from "@/components/posthog-identify";
@@ -191,14 +189,8 @@ export default async function DashboardLayout({
 
           <DashboardNav reports={navReports} totalReports={reportCount} />
 
-          {/* The only mt-auto in this column, deliberately: flexbox splits free
-              space equally between every auto margin, so leaving one on the
-              account block below halved the slack and left this box floating
-              mid-column instead of sitting on the footer. */}
-          <ProductCta className="md:mt-auto" />
-
-          <div className="hidden flex-col gap-3 border-t border-ink/10 pt-4 md:flex">
-            <WhyFree />
+          <div className="mt-auto hidden flex-col gap-3 border-t border-ink/10 pt-4 md:flex">
+            <p className="text-xs text-ink-faint">Evident · AI Presence</p>
             <p className="truncate text-xs text-ink-faint" title={user.email ?? undefined}>
               {user.email}
             </p>
@@ -206,10 +198,10 @@ export default async function DashboardLayout({
           </div>
 
           {/* Pinned to the foot of the drawer (mt-auto), below whatever space
-              the nav and the CTA leave, so the account controls sit where a
+              the navigation leaves, so the account controls sit where a
               thumb expects them rather than mid-drawer above a blank half. */}
           <div className="mt-auto flex flex-col gap-3 border-t border-ink/10 pt-4 md:hidden">
-            <WhyFree />
+            <p className="text-xs text-ink-faint">Evident · AI Presence</p>
             <p className="truncate text-xs text-ink-faint" title={user.email ?? undefined}>
               {user.email}
             </p>

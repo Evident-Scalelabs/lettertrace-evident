@@ -52,21 +52,22 @@ export function AuthForm({
     setConfirmSent(false);
     setOauthLoading(provider);
 
-    const supabase = createClient();
-    // Supabase sends the user to the provider, the provider returns to
-    // Supabase, and Supabase finally lands on this `redirectTo` with a `code`.
-    // It must be on the allowlist under Authentication → URL Configuration.
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`,
-      },
-    });
+    try {
+      const supabase = createClient();
+      // Supabase sends the user to the provider, the provider returns to
+      // Supabase, and Supabase finally lands on this `redirectTo` with a `code`.
+      // It must be on the allowlist under Authentication → URL Configuration.
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`,
+        },
+      });
 
-    // On success the browser is already navigating away, so the spinner is
-    // deliberately left running rather than flashing off mid-redirect.
-    if (oauthError) {
-      setError(oauthError.message);
+      if (oauthError) throw oauthError;
+      // On success the browser is navigating away; keep the spinner running.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setOauthLoading(null);
     }
   }
@@ -77,9 +78,8 @@ export function AuthForm({
     setConfirmSent(false);
     setLoading(true);
 
-    const supabase = createClient();
-
     try {
+      const supabase = createClient();
       if (isSignup) {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -151,7 +151,7 @@ export function AuthForm({
         <p className="mt-1 text-sm text-ink-faint">
           {isSignup
             ? "Start monitoring your brand across AI answers."
-            : "Sign in to your Lettertrace workspace."}
+            : "Sign in to your Evident AI Presence workspace."}
         </p>
       </div>
 
