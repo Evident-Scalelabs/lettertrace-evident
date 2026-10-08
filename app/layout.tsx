@@ -6,6 +6,10 @@ import { RB2BPixel } from "@/components/rb2b-pixel";
 import { PostHogAnalytics } from "@/components/posthog";
 import { publicEnvScript } from "@/lib/public-env";
 
+// This layout persists during client navigation, so every entry page must
+// receive the deployment's public browser config at request time.
+export const dynamic = "force-dynamic";
+
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
