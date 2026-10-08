@@ -12,14 +12,14 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* neutrals — warm near-black canvas, warm off-white ink */
-  --c-paper: 19 18 17;
-  --c-paper-shade: 27 26 24;
-  --c-paper-deep: 38 36 33;
-  --c-surface: 31 29 26;
-  --c-ink: 244 243 239;
-  --c-ink-soft: 190 186 178;
-  --c-ink-faint: 138 134 125;
+  /* Evident dashboard neutrals; measurement and status accents stay distinct. */
+  --c-paper: 2 6 23;
+  --c-paper-shade: 15 23 42;
+  --c-paper-deep: 30 41 59;
+  --c-surface: 15 23 42;
+  --c-ink: 248 250 252;
+  --c-ink-soft: 203 213 225;
+  --c-ink-faint: 148 163 184;
 
   /* brand accents — hues shared across themes */
   --c-terracotta: 224 120 80;
@@ -67,13 +67,13 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --c-paper: 245 244 240;
-  --c-paper-shade: 237 234 225;
-  --c-paper-deep: 225 221 209;
+  --c-paper: 248 250 252;
+  --c-paper-shade: 241 245 249;
+  --c-paper-deep: 226 232 240;
   --c-surface: 255 255 255;
-  --c-ink: 26 25 23;
-  --c-ink-soft: 69 66 60;
-  --c-ink-faint: 124 120 111;
+  --c-ink: 15 23 42;
+  --c-ink-soft: 51 65 85;
+  --c-ink-faint: 100 116 139;
 
   --c-terracotta: 224 120 80;
   --c-terracotta-soft: 240 173 144;
@@ -164,15 +164,6 @@
   .mono-eyebrow {
     @apply font-mono text-xs uppercase tracking-[0.2em] text-ink-faint;
   }
-}
-
-/* Brand lockup swaps with the theme (see components/logo.tsx). Anything that
-   isn't explicitly light is treated as dark, matching the dark default. */
-:root[data-theme="light"] .logo-for-dark {
-  display: none;
-}
-:root:not([data-theme="light"]) .logo-for-light {
-  display: none;
 }
 
 /* Provider-chip plates (see settings/keys-manager). Gemini's rainbow mark

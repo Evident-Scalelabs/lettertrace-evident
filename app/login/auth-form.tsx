@@ -151,7 +151,7 @@ export function AuthForm({
         <p className="mt-1 text-sm text-ink-faint">
           {isSignup
             ? "Start monitoring your brand across AI answers."
-            : "Sign in to your Lettertrace workspace."}
+            : "Sign in to your Evident AI Presence workspace."}
         </p>
       </div>
 
