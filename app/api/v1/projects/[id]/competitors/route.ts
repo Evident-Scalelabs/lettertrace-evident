@@ -7,10 +7,8 @@ import { humanError } from "@/lib/llm";
 export const dynamic = "force-dynamic";
 
 // GET /api/v1/projects/:id/competitors — the project's tracked competitors.
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:read", "v1");
   if (auth instanceof Response) return auth;
 
@@ -33,10 +31,8 @@ export async function GET(
 // POST /api/v1/projects/:id/competitors — add tracked competitors.
 // Body: { competitors: [{ name, aliases?, domain? }] }. Names the project
 // already tracks are skipped (counted), not errors.
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:write", "v1");
   if (auth instanceof Response) return auth;
 

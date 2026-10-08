@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, ExternalLink, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProject } from "@/lib/data";
@@ -51,8 +52,9 @@ function SentimentDot({ sentiment }: { sentiment: Sentiment | null }) {
   );
 }
 
-export default async function RunDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+export default async function RunDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -217,12 +219,12 @@ export default async function RunDetailPage({ params }: { params: { id: string }
         billingOwnerId={project.user_id}
       />
       <div className="space-y-4">
-        <a
+        <Link
           href="/dashboard/runs"
           className="inline-flex items-center gap-1 text-sm text-ink-faint hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" /> Back to reports
-        </a>
+        </Link>
         <SectionHeading
           title="Report"
           description={`${modelLabel(run.provider, run.model)} · ${run.completed_count} / ${run.prompt_count} answers · ${timeAgo(run.created_at)}`}

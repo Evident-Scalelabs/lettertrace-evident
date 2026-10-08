@@ -24,10 +24,8 @@ export const dynamic = "force-dynamic";
 // (proxy and server access logs record those verbatim) and never a path
 // segment. It is also never echoed back — the response carries only the masked
 // hint, which is all any client needs to confirm the right key landed.
-export async function PUT(
-  request: Request,
-  { params }: { params: { provider: string } },
-) {
+export async function PUT(request: Request, props: { params: Promise<{ provider: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "keys:write", "v1");
   if (auth instanceof Response) return auth;
 
@@ -87,10 +85,8 @@ export async function PUT(
 
 // DELETE /api/v1/keys/:provider — forget the stored key for one provider.
 // Auth: Bearer token with the "keys:write" scope.
-export async function DELETE(
-  request: Request,
-  { params }: { params: { provider: string } },
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ provider: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "keys:write", "v1");
   if (auth instanceof Response) return auth;
 

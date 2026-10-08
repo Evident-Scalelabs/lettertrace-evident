@@ -39,7 +39,7 @@ const STATUS_TONE: Record<RunStatus, "mint" | "teal" | "terracotta" | "neutral">
 };
 
 export default async function RunsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

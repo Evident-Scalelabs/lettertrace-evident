@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // POST /api/report-groups, open a batch so the N runs the browser is about to
 // start can be summarised in ONE email. It starts nothing itself.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const project = await getProject(supabase, user.id);

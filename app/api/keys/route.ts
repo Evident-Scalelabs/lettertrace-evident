@@ -8,7 +8,7 @@ import { captureServerEvent } from "@/lib/posthog-server";
 // encrypt → store sequence lives in lib/provider-keys so this route and the
 // CLI-facing /api/v1/keys route cannot drift apart on the part that matters.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

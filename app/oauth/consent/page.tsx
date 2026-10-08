@@ -53,15 +53,16 @@ function ConsentError({ message }: { message: string }) {
   );
 }
 
-export default async function ConsentPage({
-  searchParams,
-}: {
-  searchParams: { req?: string };
-}) {
+export default async function ConsentPage(
+  props: {
+    searchParams: Promise<{ req?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const reqId = typeof searchParams.req === "string" ? searchParams.req : "";
   const consentPath = `/oauth/consent?req=${encodeURIComponent(reqId)}`;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

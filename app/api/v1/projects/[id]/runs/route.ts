@@ -10,10 +10,8 @@ export const maxDuration = 800;
 export const dynamic = "force-dynamic";
 
 // GET /api/v1/projects/:id/runs — recent runs for a project (?limit=20).
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "runs:read", "v1");
   if (auth instanceof Response) return auth;
 
@@ -41,10 +39,8 @@ export async function GET(
 // the project default for this run; background: true returns 202 as soon as
 // the run row exists (a run takes minutes; poll GET /v1/runs/:id/status).
 // No body keeps the default, synchronous behavior.
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "runs:trigger", "v1");
   if (auth instanceof Response) return auth;
 

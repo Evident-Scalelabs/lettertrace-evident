@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * write.
  */
 export async function POST() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -110,7 +110,8 @@ function ColumnHeader({ children, className }: { children: React.ReactNode; clas
   );
 }
 
-export default async function GrowthPage({ searchParams }: { searchParams: SP }) {
+export default async function GrowthPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const admin = await requireAdmin();
   if (!admin) notFound();
 

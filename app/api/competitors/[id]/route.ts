@@ -4,11 +4,9 @@ import { humanError } from "@/lib/llm";
 import { createClient } from "@/lib/supabase/server";
 import { logDashboard } from "@/lib/activity";
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
-  const supabase = createClient();
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

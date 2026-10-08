@@ -10,11 +10,9 @@ export const dynamic = "force-dynamic";
 // generation (generateVariations injects it), and until this existed it was
 // settable only in the moment the topic was created — the one moment the user
 // least knows what to write in it.
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
-  const supabase = createClient();
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -67,11 +65,9 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
-  const supabase = createClient();
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

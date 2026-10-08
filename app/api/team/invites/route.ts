@@ -25,7 +25,7 @@ const REFUSALS: Record<string, { message: string; status: number }> = {
 // Owner-only. A member can see the team but cannot grow it: handing out access
 // to the owner's data and the owner's API spend is the owner's decision.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
 // the active project, which the route already resolves — and the token, which
 // is what the invitee holds, is deliberately never a thing the owner can name.
 export async function DELETE(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

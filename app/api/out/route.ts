@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // record that they "clicked" a real Letter product URL — never fill the table
 // with arbitrary strings.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

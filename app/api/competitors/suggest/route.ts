@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 // Ask the model for direct competitors of the active org's brand, excluding
 // ones already tracked. Uses the same key resolution (own -> trial) as runs.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

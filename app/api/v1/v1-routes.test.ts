@@ -180,7 +180,7 @@ describe("GET /api/v1/projects/:id/prompts", () => {
   it("404s for a project that isn't the caller's", async () => {
     vi.mocked(listProjectPrompts).mockResolvedValue(null);
     const res = await getPromptsRoute(req("/api/v1/projects/p1/prompts"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -198,7 +198,7 @@ describe("GET /api/v1/projects/:id/prompts", () => {
       },
     ]);
     const res = await getPromptsRoute(req("/api/v1/projects/p1/prompts"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(200);
     expect((await res.json()).prompts[0].topic).toBe("CRM");
@@ -217,7 +217,7 @@ describe("POST /api/v1/projects/:id/prompts", () => {
         method: "POST",
         body: JSON.stringify({ prompts: [{ text: "x", topic: "T" }] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(404);
 
@@ -231,7 +231,7 @@ describe("POST /api/v1/projects/:id/prompts", () => {
         method: "POST",
         body: JSON.stringify({ prompts: [{ text: "" }] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(400);
   });
@@ -257,7 +257,7 @@ describe("POST /api/v1/projects/:id/prompts", () => {
         method: "POST",
         body: JSON.stringify({ prompts: [{ text: "best crm", topic: "CRM" }] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -276,7 +276,7 @@ describe("PATCH /api/v1/prompts/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ is_active: "yes" }),
       }),
-      { params: { id: "prompt-1" } },
+      { params: Promise.resolve({ id: "prompt-1" }) },
     );
     expect(res.status).toBe(400);
     expect(updatePrompt).not.toHaveBeenCalled();
@@ -288,7 +288,7 @@ describe("PATCH /api/v1/prompts/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ target_url: 42 }),
       }),
-      { params: { id: "prompt-1" } },
+      { params: Promise.resolve({ id: "prompt-1" }) },
     );
     expect(res.status).toBe(400);
     expect(updatePrompt).not.toHaveBeenCalled();
@@ -305,7 +305,7 @@ describe("PATCH /api/v1/prompts/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ is_active: false }),
       }),
-      { params: { id: "prompt-1" } },
+      { params: Promise.resolve({ id: "prompt-1" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -328,7 +328,7 @@ describe("PATCH /api/v1/prompts/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ is_active: false }),
       }),
-      { params: { id: "prompt-1" } },
+      { params: Promise.resolve({ id: "prompt-1" }) },
     );
     expect(res.status).toBe(200);
     expect((await res.json()).prompt.is_active).toBe(false);
@@ -355,7 +355,7 @@ describe("PATCH /api/v1/prompts/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ target_url: "https://acme.io/blog/best-crm" }),
       }),
-      { params: { id: "prompt-1" } },
+      { params: Promise.resolve({ id: "prompt-1" }) },
     );
     expect(res.status).toBe(200);
     expect((await res.json()).prompt.target_url).toBe("https://acme.io/blog/best-crm");
@@ -369,7 +369,7 @@ describe("GET /api/v1/projects/:id/runs", () => {
   it("404s for a project that isn't the caller's", async () => {
     vi.mocked(listRuns).mockResolvedValue(null);
     const res = await getRunsRoute(req("/api/v1/projects/p1/runs"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -377,7 +377,7 @@ describe("GET /api/v1/projects/:id/runs", () => {
   it("passes the ?limit param through", async () => {
     vi.mocked(listRuns).mockResolvedValue([]);
     const res = await getRunsRoute(req("/api/v1/projects/p1/runs?limit=5"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(200);
     expect(listRuns).toHaveBeenCalledWith(AUTH_CTX.supabase, "user-1", "p1", 5);
@@ -393,7 +393,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
     });
     const res = await postRunRoute(
       req("/api/v1/projects/p1/runs", { method: "POST" }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(402);
   });
@@ -405,7 +405,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
     });
     const res = await postRunRoute(
       req("/api/v1/projects/p1/runs", { method: "POST" }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(200);
     expect((await res.json()).runId).toBe("r1");
@@ -429,7 +429,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
         method: "POST",
         body: JSON.stringify({ background: true }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(202);
     const body = await res.json();
@@ -451,7 +451,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
         method: "POST",
         body: JSON.stringify({ background: "yes" }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(200);
     expect(triggerRunForProject).toHaveBeenCalledWith(AUTH_CTX.supabase, "user-1", "p1", {
@@ -465,7 +465,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
         method: "POST",
         body: JSON.stringify({ provider: "mistral" }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(400);
     expect(triggerRunForProject).not.toHaveBeenCalled();
@@ -481,7 +481,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
         method: "POST",
         body: JSON.stringify({ provider: "google", model: "google-ai-overviews" }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(200);
     // Overrides ride alongside the caller attribution master's activity log adds.
@@ -502,7 +502,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
         method: "POST",
         body: JSON.stringify({ provider: "openai", model: "gpt-4o-mini" }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(200);
     expect(triggerRunForProject).toHaveBeenCalledWith(AUTH_CTX.supabase, "user-1", "p1", {
@@ -516,7 +516,7 @@ describe("POST /api/v1/projects/:id/runs", () => {
 describe("GET /api/v1/runs/:id", () => {
   it("404s for an unknown or unowned run", async () => {
     vi.mocked(getRunReport).mockResolvedValue(null);
-    const res = await getReportRoute(req("/api/v1/runs/r1"), { params: { id: "r1" } });
+    const res = await getReportRoute(req("/api/v1/runs/r1"), { params: Promise.resolve({ id: "r1" }) });
     expect(res.status).toBe(404);
   });
 
@@ -554,7 +554,7 @@ describe("GET /api/v1/runs/:id", () => {
       promptEntities: [],
       competitorCitations: [],
     });
-    const res = await getReportRoute(req("/api/v1/runs/r1"), { params: { id: "r1" } });
+    const res = await getReportRoute(req("/api/v1/runs/r1"), { params: Promise.resolve({ id: "r1" }) });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.summary.brandShareOfVoice).toBe(0.25);
@@ -566,7 +566,7 @@ describe("GET /api/v1/runs/:id/responses", () => {
   it("404s for an unknown or unowned run", async () => {
     vi.mocked(getRunResponses).mockResolvedValue(null);
     const res = await getResponsesRoute(req("/api/v1/runs/r1/responses"), {
-      params: { id: "r1" },
+      params: Promise.resolve({ id: "r1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -596,7 +596,7 @@ describe("GET /api/v1/runs/:id/responses", () => {
       ],
     });
     const res = await getResponsesRoute(req("/api/v1/runs/r1/responses"), {
-      params: { id: "r1" },
+      params: Promise.resolve({ id: "r1" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -609,7 +609,7 @@ describe("GET /api/v1/runs/:id/status", () => {
   it("404s for an unknown or unowned run", async () => {
     vi.mocked(getRunStatus).mockResolvedValue(null);
     const res = await getStatusRoute(req("/api/v1/runs/r1/status"), {
-      params: { id: "r1" },
+      params: Promise.resolve({ id: "r1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -634,7 +634,7 @@ describe("GET /api/v1/runs/:id/status", () => {
       created_at: "2026-07-30T01:00:00Z",
     });
     const res = await getStatusRoute(req("/api/v1/runs/r1/status"), {
-      params: { id: "r1" },
+      params: Promise.resolve({ id: "r1" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -662,7 +662,7 @@ describe("GET /api/v1/projects/:id/history", () => {
   it("401s without a valid key", async () => {
     vi.mocked(authenticateApiKey).mockResolvedValue(null);
     const res = await getHistoryRoute(req("/api/v1/projects/p1/history"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(401);
     expect(getProjectHistory).not.toHaveBeenCalled();
@@ -671,14 +671,14 @@ describe("GET /api/v1/projects/:id/history", () => {
   it("404s for a project that isn't the caller's", async () => {
     vi.mocked(getProjectHistory).mockResolvedValue(null);
     const res = await getHistoryRoute(req("/api/v1/projects/p1/history"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(404);
   });
 
   it("400s on a nonsense limit rather than silently defaulting", async () => {
     const res = await getHistoryRoute(req("/api/v1/projects/p1/history?limit=-3"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(400);
     expect(getProjectHistory).not.toHaveBeenCalled();
@@ -693,7 +693,7 @@ describe("GET /api/v1/projects/:id/history", () => {
       everMentioned: false,
     });
     const res = await getHistoryRoute(req("/api/v1/projects/p1/history"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -716,7 +716,7 @@ describe("GET /api/v1/projects/:id/history", () => {
       everMentioned: true,
     });
     const res = await getHistoryRoute(req("/api/v1/projects/p1/history?limit=5"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     const body = await res.json();
     expect(body.everMentioned).toBe(true);
@@ -729,7 +729,7 @@ describe("GET /api/v1/projects/:id/competitors", () => {
   it("404s for a project that isn't the caller's", async () => {
     vi.mocked(listProjectCompetitors).mockResolvedValue(null);
     const res = await getCompetitorsRoute(req("/api/v1/projects/p1/competitors"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -745,7 +745,7 @@ describe("GET /api/v1/projects/:id/competitors", () => {
       },
     ]);
     const res = await getCompetitorsRoute(req("/api/v1/projects/p1/competitors"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(200);
     expect((await res.json()).competitors[0].name).toBe("WEKA");
@@ -765,7 +765,7 @@ describe("POST /api/v1/projects/:id/competitors", () => {
         method: "POST",
         body: JSON.stringify({ competitors: [{ name: "WEKA" }] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(404);
 
@@ -779,7 +779,7 @@ describe("POST /api/v1/projects/:id/competitors", () => {
         method: "POST",
         body: JSON.stringify({ competitors: [] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(400);
   });
@@ -803,7 +803,7 @@ describe("POST /api/v1/projects/:id/competitors", () => {
         method: "POST",
         body: JSON.stringify({ competitors: [{ name: "WEKA", domain: "weka.io" }] }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -819,7 +819,7 @@ describe("GET /api/v1/projects/:id/competitors/discovered", () => {
   it("404s for a project that isn't the caller's", async () => {
     vi.mocked(discoverProjectCompetitors).mockResolvedValue(null);
     const res = await getDiscoveredRoute(req("/api/v1/projects/p1/competitors/discovered"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(404);
   });
@@ -831,7 +831,7 @@ describe("GET /api/v1/projects/:id/competitors/discovered", () => {
       topCount: 7,
     });
     const res = await getDiscoveredRoute(req("/api/v1/projects/p1/competitors/discovered"), {
-      params: { id: "p1" },
+      params: Promise.resolve({ id: "p1" }),
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -845,7 +845,7 @@ describe("DELETE /api/v1/competitors/:id", () => {
     vi.mocked(deleteCompetitor).mockResolvedValue(null);
     const res = await deleteCompetitorRoute(
       req("/api/v1/competitors/c1", { method: "DELETE" }),
-      { params: { id: "c1" } },
+      { params: Promise.resolve({ id: "c1" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -860,7 +860,7 @@ describe("DELETE /api/v1/competitors/:id", () => {
     });
     const res = await deleteCompetitorRoute(
       req("/api/v1/competitors/c1", { method: "DELETE" }),
-      { params: { id: "c1" } },
+      { params: Promise.resolve({ id: "c1" }) },
     );
     expect(res.status).toBe(200);
     expect((await res.json()).removed.name).toBe("WEKA");
@@ -880,7 +880,7 @@ describe("PATCH /api/v1/projects/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ replicates: 3 }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(404);
 
@@ -894,7 +894,7 @@ describe("PATCH /api/v1/projects/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ replicates: "three" }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(400);
   });
@@ -916,7 +916,7 @@ describe("PATCH /api/v1/projects/:id", () => {
         method: "PATCH",
         body: JSON.stringify({ brand_aliases: ["Acme Cloud"], replicates: 3 }),
       }),
-      { params: { id: "p1" } },
+      { params: Promise.resolve({ id: "p1" }) },
     );
     expect(res.status).toBe(200);
     const body = await res.json();

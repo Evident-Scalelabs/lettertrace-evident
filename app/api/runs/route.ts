@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
 // provider's default model) without touching the project — the loop behind
 // "Run on all engines". No body preserves the original behavior exactly.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

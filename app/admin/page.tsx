@@ -29,7 +29,8 @@ function windowFrom(searchParams: SP): { label: string; hours: number } {
   return WINDOWS.find((w) => w.label === raw) ?? WINDOWS[1];
 }
 
-export default async function AdminPage({ searchParams }: { searchParams: SP }) {
+export default async function AdminPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const admin = await requireAdmin();
   // 404, not 403. Everyone who is not an operator sees exactly what they would
   // see for a route that does not exist, which is the honest answer to them.

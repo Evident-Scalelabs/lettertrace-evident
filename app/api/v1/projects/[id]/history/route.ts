@@ -12,10 +12,8 @@ export const dynamic = "force-dynamic";
 // is the normal state for months, the question is whether the rate is inching
 // up, whether their own pages have started being cited, and whether the first
 // mention has landed. `firstMentionAt` is that event.
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:read", "v1");
   if (auth instanceof Response) return auth;
 

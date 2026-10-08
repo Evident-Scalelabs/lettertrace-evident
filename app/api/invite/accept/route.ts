@@ -39,7 +39,7 @@ const REFUSALS: Record<string, { message: string; status: number }> = {
 // that could be accepted by fetching it would routinely be spent by a security
 // appliance before its recipient ever saw it.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

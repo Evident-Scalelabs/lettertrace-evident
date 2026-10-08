@@ -9,7 +9,7 @@ import { captureServerEvent } from "@/lib/posthog-server";
 // the provider-key equivalent, so the two can't drift on the security-critical
 // ordering.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

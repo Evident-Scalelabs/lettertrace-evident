@@ -794,6 +794,9 @@ was actually reached on.
 
 ## Deployment
 
+For this fork's Railway setup, see [Railway deployment](docs/railway.md) and the
+[self-hosted Supabase assessment](docs/railway-supabase-assessment.md).
+
 Deploy anywhere that runs Next.js. On **Vercel**: import the repo, set the env vars from `.env.example`, and deploy. Runs execute synchronously inside the API route, so for large prompt sets prefer a Node server or bump the function's `maxDuration`.
 
 ## Security notes

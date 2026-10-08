@@ -8,7 +8,7 @@ import type { Topic } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

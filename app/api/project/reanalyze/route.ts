@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 // only caller of scrapeDomain/suggestFromSite before this; a project whose
 // prompts drifted from what the company actually does had no way back.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

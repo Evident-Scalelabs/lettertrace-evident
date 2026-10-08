@@ -8,10 +8,8 @@ export const dynamic = "force-dynamic";
 
 // DELETE /api/v1/competitors/:id — stop tracking a competitor. Past mention
 // rows keep the entity name they recorded, so old reports stay intact.
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const auth = await requireApiAuth(request, "projects:write", "v1");
   if (auth instanceof Response) return auth;
 

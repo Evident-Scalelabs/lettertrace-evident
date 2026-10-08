@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProject } from "@/lib/data";
 
 export async function PATCH(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const project = await getProject(supabase, user.id);

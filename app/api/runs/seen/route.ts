@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // id, so the mark lands on its finish time and a NEWER unread run stays
 // flagged; dismissing the banner sends nothing, acknowledging everything so far.
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

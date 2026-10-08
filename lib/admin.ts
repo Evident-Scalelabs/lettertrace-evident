@@ -94,7 +94,7 @@ export function adminGate(): AdminGate {
  * is the whole gate.
  */
 export async function requireAdmin(): Promise<{ email: string; gate: AdminGate } | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
