@@ -1,7 +1,8 @@
 # Lettertrace AI Gateway cutover
 
-Status: source preparation only. No provider key, hosted database/config change,
-paid request, schedule activation or deployment is part of this packet.
+Status: source preparation with an explicitly authorized production Git
+auto-deploy pause recorded below. Provider inference, database migration,
+schedule activation, restart and deployment remain held.
 
 ## Result and scope
 
@@ -96,34 +97,63 @@ changes. The new source reads `retired_at`, so this migration must precede its
 release. The hosted schema-drift CI job uses the Supabase Management API; it is
 not an offline gate and was not invoked during this key-free packet.
 
-## Coordinated release, held pending keys
+## Authorized source-merge pause and held release
 
-Read-only Railway source inspection on 2026-10-30 confirms production service
-`lettertrace` in project `lettertrace-evident` follows this repository's `master`
-branch with `checkSuites: false`. Merging can therefore deploy immediately. The
-GitHub container workflow also publishes its default-branch `latest` image on a
-`master` push. Hold this merge until the release owner has explicitly decoupled
-deployment or the coordinated cutover is ready. Merge authorization alone does
-not apply the required database migration or lift the live-cutover hold.
+At 2026-10-30 21:10 UTC, the release coordinator authorized disabling only
+production Git auto-deploy through Railway's supported
+`serviceInstanceAutoDeployUpdate(enabled: false)` control. The readback changed
+`enabled: true` to `false`; the repository remains connected. No source pin,
+restart, deployment or database write was performed. This decouples the
+source-only merge from the held runtime cutover.
 
-1. Stop affected AI admission on every instance, including utilities/key
-   verification, scheduled work and continuations. Drain accepted work and keep
-   its original results/charges; do not issue replacement calls to finish a queue.
-2. Review original-route counts and unresolved paid work through the existing
-   operator owner. Stop all old-code workers before applying the prepared SQL;
-   older utility readers do not understand retired keys.
-3. Apply the reviewed schema sections under the release owner's migration
-   procedure, then deploy the reviewed new image. Neither operation is performed
-   by this packet. Existing schedules and trial funding are not changed here.
-4. Arrange fresh Gateway keys through the existing secure BYOK settings/API
-   owner. Key saving itself makes paid verification/search calls, so perform it
-   only during bounded keyed acceptance. No shared environment key fallback is
-   added. Team credits are not an API-key budget; arrange finite external key
-   budgets before testing.
-5. Validate actual model/search/citation behavior, usage and charges on original
-   payloads. Reopen only the sole new path after those gates pass. Preserve
-   status/result reads throughout. Retired credential removal/revocation follows
-   original-charge reconciliation and ownership checks.
+| Target | Address |
+| --- | --- |
+| Railway project | `lettertrace-evident`, `72c47487-8de8-4805-a051-f0410c298413` |
+| Environment | `production`, `73c29edf-942d-4017-a128-24c8604b15ed` |
+| Service | `lettertrace`, `def087e4-4c0f-4a6c-8b63-06267dce91a8` |
+| Previous trigger | This repository's `master`, `checkSuites: false` |
+| Current Git auto-deploy | Disabled; retain this hold until W10 |
+| Deployment state before/after pause | Already offline, no active deployment; latest `ce57dc60-dfcd-47e8-92a2-78e26264558d` remained `FAILED` from 2026-10-08 |
+
+There was no running deployment to restart or replace. The GitHub container
+workflow still publishes its default-branch `latest` image on a `master` push;
+that publication does not deploy this Railway service. Do not reconnect the
+source, select Deploy Latest Commit or restore auto-deploy merely because the
+source PR is merged. The documented
+[Git auto-deploy control](https://docs.railway.com/deployments/github-autodeploys#disable-automatic-deployments)
+only pauses future commit-triggered deployments.
+
+`AI_GATEWAY_API_KEY_STAGED`, if placed on the service, is intentionally unused
+escrow. Lettertrace reads no shared Gateway environment credential. Before use,
+the fresh key must enter through the existing per-owner encrypted router-key
+settings/API owner; key saving itself makes paid verification/search calls.
+Staging a secret does not verify it or create a usable router row.
+
+1. Complete separately authorized bounded G1 validation on the reviewed new
+   source in an isolated instance/disposable database. Arrange a finite API-key
+   budget, enter the fresh key through the existing encrypted key owner and
+   validate exact models, native search/citations, usage and charges. Team
+   credits are not an API-key budget. No G1 provider calls occurred in this packet.
+2. At W10, stop affected AI admission on every instance, including utilities,
+   scheduled work, key verification and continuations. Drain accepted work and
+   keep its original results/charges; do not issue replacement calls to finish a
+   queue. Review unresolved paid work through its existing operator owner.
+3. Keep all old-code workers stopped while applying the reviewed schema sections
+   under the release owner's migration procedure; older utility readers do not
+   understand retired keys. Enter/verify the new production credential through
+   the same addressed encrypted-key owner under G1. The new source can execute
+   that owner independently of the old deployed application. Never relabel an
+   old credential or manufacture its search-verification result.
+4. Explicitly deploy the reviewed new image only after the schema/key gates are
+   satisfied. Confirm runtime compatibility and retained reads before reopening
+   the sole new path. Existing schedules and trial funding are not changed by
+   the source merge. Restore the previous Git auto-deploy setting (`true`,
+   intended source branch `master`) only at the accepted W10 release, with an
+   explicit readback. Do not restore it during source preparation.
+5. Preserve status/result reads and completed provenance. Retired credential
+   removal/revocation follows original-charge reconciliation and ownership
+   checks. No database migration, live test or cutover is authorized by the
+   source-merge pause alone.
 
 After this barrier, an old OpenRouter-capable image is not an automatic rollback.
 Pause affected admission and repair a validated new-path artifact. Never rename
