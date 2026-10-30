@@ -1,3 +1,4 @@
+import { isActiveRouterKey } from "@/lib/routers";
 import { Users } from "lucide-react";
 import { Button, EmptyState, SectionHeading } from "@/components/ui";
 import { getProject } from "@/lib/data";
@@ -45,7 +46,7 @@ export default async function CompetitorsPage() {
 
   // Ask the same resolver /api/competitors/suggest uses. Checking only for a
   // direct key on the default provider hid the button from anyone paying
-  // through a router (Concentrate, OpenRouter) or on the free trial, though the
+  // through a router (Concentrate, AI Gateway) or on the free trial, though the
   // route itself would have served them.
   const key = await resolveKey(supabase, user.id, project.default_provider, project.default_model);
   const hasKey = key.source !== "none" && key.source !== "exhausted";

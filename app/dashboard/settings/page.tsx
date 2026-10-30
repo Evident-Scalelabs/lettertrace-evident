@@ -1,3 +1,4 @@
+import { isActiveRouterKey } from "@/lib/routers";
 import { KeyRound, Building2, Palette, Plug, Shuffle, Users, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -59,7 +60,7 @@ export default async function SettingsPage() {
   // and what its search was confirmed for. Not reduced to a provider list here —
   // coverage depends on the web-search toggle inside the form, which is client
   // state, so the picker resolves it per keystroke from these credentials.
-  const routerCoverage = payerRouterKeys.map((k) => ({
+  const routerCoverage = payerRouterKeys.filter(isActiveRouterKey).map((k) => ({
     router: k.router,
     searchVerified: k.search_verified ?? [],
   }));

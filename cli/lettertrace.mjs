@@ -361,15 +361,18 @@ const commands = {
     const out = await withAutoLogin(() => rest(base, "GET", "/router-keys"));
     if (JSON_OUT) return printJson(out);
     const stored = new Map((out.keys ?? []).map((k) => [k.router, k]));
+    const supported = out.routers ?? [];
+    const retired = (out.keys ?? []).filter((key) => !supported.some((router) => router.id === key.router));
     table(
-      (out.routers ?? []).map((r) => {
+      [...supported, ...retired.map((key) => ({ id: key.router, label: "Retired credential", providers: [],
+        key_url: `Remove: lettertrace routers remove ${key.router}`, retired: true }))].map((r) => {
         const row = stored.get(r.id);
         return {
           router: r.id,
           name: r.label,
           key: row?.key_hint ?? c.dim("not set"),
           engines: (r.providers ?? []).join(", "),
-          grounded: row ? (row.search_verified ?? []).join(", ") || c.dim("none") : "",
+          grounded: r.retired ? "inactive" : row ? (row.search_verified ?? []).join(", ") || c.dim("none") : "",
           where: r.key_url,
         };
       }),

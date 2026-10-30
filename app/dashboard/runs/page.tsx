@@ -1,3 +1,4 @@
+import { isActiveRouterKey } from "@/lib/routers";
 import { ArrowRight, PlayCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProject, getConfiguredProviders, getRouterKeysPublic } from "@/lib/data";
@@ -12,7 +13,7 @@ import {
 } from "@/lib/trial";
 import { trialSpendLimitMicros } from "@/lib/pricing";
 import { PROVIDERS, modelLabel } from "@/lib/models";
-import { ROUTERS, coveredProviders } from "@/lib/routers";
+import { routerLabel, coveredProviders } from "@/lib/routers";
 import { timeAgo } from "@/lib/utils";
 import { isAbandoned, settleAbandonedRun, INTERRUPTED_RUN_ERROR } from "@/lib/engine";
 import type { Run, RunStatus } from "@/lib/types";
@@ -82,7 +83,7 @@ export default async function RunsPage() {
   ]);
   const ownCovered = coveredProviders({
     direct: configured,
-    routers: routerRows.map((k) => ({ router: k.router, searchVerified: k.search_verified ?? [] })),
+    routers: routerRows.filter(isActiveRouterKey).map((k) => ({ router: k.router, searchVerified: k.search_verified ?? [] })),
     webSearch: project.use_web_search,
   });
   let available = ownCovered;
@@ -221,8 +222,8 @@ export default async function RunsPage() {
                     {/* The engine is what was measured; the router is only who
                         carried it. Shown because a series that steps at the run
                         where the credential changed is otherwise unexplained. */}
-                    {run.route && ROUTERS[run.route] && (
-                      <Badge tone="neutral">via {ROUTERS[run.route].label}</Badge>
+                    {run.route && (
+                      <Badge tone="neutral">via {routerLabel(run.route)}</Badge>
                     )}
                     <span className="text-ink-faint">·</span>
                     <span className="text-sm text-ink-soft">

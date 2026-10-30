@@ -317,7 +317,7 @@ describe("resolveRunKeyFor with a router credential", () => {
   // fixes differ (turn search off, or add a direct key), and the old message
   // named neither.
   it("refuses grounded Gemini as unroutable, not as a missing key", async () => {
-    hasRouter("openrouter", ["anthropic"]);
+    hasRouter("ai-gateway", ["anthropic"]);
     const k = await runKeyFor(db(0), "user-1", "google", undefined, { webSearch: true });
     expect(k.source).toBe("unroutable");
     expect(k.refusal).toBeTruthy();
@@ -326,11 +326,11 @@ describe("resolveRunKeyFor with a router credential", () => {
   it("serves ungrounded Gemini through the router", async () => {
     // The half of LET-176 that is genuinely fixed: no Google key, router only,
     // web search off — this now runs instead of being unselectable.
-    hasRouter("openrouter", ["anthropic"]);
+    hasRouter("ai-gateway", ["anthropic"]);
     const k = await runKeyFor(db(0), "user-1", "google", undefined, { webSearch: false });
     expect(k.source).toBe("own");
-    expect(k.apiKey).toBe("key-for-openrouter");
-    expect(k.route?.router).toBe("openrouter");
+    expect(k.apiKey).toBe("key-for-ai-gateway");
+    expect(k.route?.router).toBe("ai-gateway");
   });
 
   it("takes a router key before falling back to the operator's trial", async () => {
@@ -522,13 +522,13 @@ describe("the exhausted message offers the router", () => {
     expect(k.source).toBe("exhausted");
     expect(message).toContain("Anthropic (Claude) key");
     expect(message).toContain("Concentrate");
-    expect(message).toContain("OpenRouter");
+    expect(message).toContain("AI Gateway");
   });
 
   // The engines come from the registry, so the pitch can't outlive the support
   // entry that backs it.
   // No per-engine promise in this line. Routers differ in what they can
-  // MEASURE — Concentrate carries both engines' native search, OpenRouter only
+  // MEASURE — Concentrate carries both engines' native search, AI Gateway only
   // Claude's — so naming engines here would over-promise for one of them. The
   // settings card states coverage per router, where it can be accurate.
   it("promises no engine it might not be able to measure", async () => {

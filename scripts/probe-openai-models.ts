@@ -87,7 +87,7 @@ function readKey(router: RouterId | null, flags: Record<string, string>): string
     throw new Error(`--key-file ${flags["key-file"]} is empty.`);
   }
   const names = router
-    ? [`ROUTER_API_KEY_${router.toUpperCase()}`, "ROUTER_API_KEY"]
+    ? [`ROUTER_API_KEY_${router.toUpperCase().replace(/-/g, "_")}`, "ROUTER_API_KEY"]
     : ["OPENAI_API_KEY", "TRIAL_OPENAI_API_KEY"];
   for (const name of names) {
     const key = process.env[name]?.trim();

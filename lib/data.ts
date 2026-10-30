@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isActiveRouterKey } from "@/lib/routers";
 import { decryptSecret } from "@/lib/crypto";
 import { selectAll } from "@/lib/paging";
 import { memberProjectIds, projectAccessFilter } from "@/lib/project-access";
@@ -9,6 +10,7 @@ import type {
   ProviderKeyPublic,
   RouterId,
   RouterKeyPublic,
+  StoredRouterId,
 } from "@/lib/types";
 
 // Server-side data helpers shared across pages and route handlers.
@@ -123,7 +125,7 @@ export async function getConfiguredProviders(
   return keys.map((k) => k.provider);
 }
 
-const ROUTER_KEY_COLUMNS = "id, router, label, base_url, key_hint, search_verified, created_at";
+const ROUTER_KEY_COLUMNS = "id, router, label, base_url, key_hint, search_verified, retired_at, created_at";
 
 /** Safe (no ciphertext) list of the user's stored LLM router keys. */
 export const getRouterKeysPublic = cache(async function getRouterKeysPublic(
@@ -162,19 +164,21 @@ export async function getDecryptedRouterKeys(
 ): Promise<DecryptedRouterKey[]> {
   const { data } = await supabase
     .from("router_keys")
-    .select("router, base_url, search_verified, encrypted_key")
+    .select("router, base_url, search_verified, retired_at, encrypted_key")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   const rows = (data ?? []) as {
-    router: RouterId;
+    router: StoredRouterId;
     base_url: string | null;
     search_verified: Provider[] | null;
+    retired_at?: string | null;
     encrypted_key: string;
   }[];
 
   const keys: DecryptedRouterKey[] = [];
   for (const row of rows) {
+    if (!isActiveRouterKey(row)) continue;
     try {
       keys.push({
         router: row.router,

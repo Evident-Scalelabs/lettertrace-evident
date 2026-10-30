@@ -1,3 +1,4 @@
+import { isActiveRouterKey } from "@/lib/routers";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { DashboardNav, type NavReport } from "@/components/dashboard/nav";
@@ -95,7 +96,7 @@ export default async function DashboardLayout({
   const payer = project?.user_id ?? user.id;
   const payerClient = payer === user.id ? supabase : createServiceClient();
   // A router key is an own key too: the resolvers try it before the trial, so
-  // a Concentrate or OpenRouter user is paying their own way and must not be
+  // a Concentrate or AI Gateway user is paying their own way and must not be
   // told they're on complimentary tokens.
   const [providers, routerKeys] = await Promise.all([
     getConfiguredProviders(payerClient, payer),
@@ -103,7 +104,7 @@ export default async function DashboardLayout({
   ]);
 
   let trial: { used: number; limit: number; exhausted: boolean } | null = null;
-  if (project && trialEnabled() && providers.length === 0 && routerKeys.length === 0) {
+  if (project && trialEnabled() && providers.length === 0 && !routerKeys.some(isActiveRouterKey)) {
     const used = await getTrialRunsUsed(payerClient, payer);
     const limit = trialRunLimit();
     trial = { used, limit, exhausted: used >= limit };

@@ -198,7 +198,7 @@ alter table public.provider_keys
   add constraint provider_keys_provider_check check (provider in ('anthropic', 'openai', 'google', 'perplexity'));
 
 -- ---------- router_keys (LLM gateway credential, encrypted) ----------
--- One key that reaches many providers (OpenRouter, Concentrate). Deliberately a
+-- One key that reaches many providers (AI Gateway, Concentrate, Merge). Deliberately a
 -- separate table rather than more provider_keys rows: a router is a credential,
 -- not an answer engine, so it must not widen the provider allow-list above and
 -- must never be storable as a project's default_provider. See lib/routers.ts.
@@ -211,7 +211,7 @@ alter table public.provider_keys
 create table if not exists public.router_keys (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  router text not null check (router in ('concentrate', 'openrouter', 'merge')),
+  router text not null check (router in ('concentrate', 'ai-gateway', 'merge', 'openrouter')),
   label text,
   -- Only for a self-hosted deployment of a router; null uses the registry's URL.
   base_url text,
@@ -222,11 +222,50 @@ create table if not exists public.router_keys (
   unique (user_id, router)
 );
 
--- Widen the router allow-list on existing deployments (the create above is a
--- no-op once the table exists). Safe to re-run.
+-- BEGIN AI_GATEWAY_CUTOVER_KEYS
+-- Retire old credentials without relabelling or decrypting their original bytes.
+-- This section and the run-route section below form the isolated cutover SQL.
+alter table public.router_keys add column if not exists retired_at timestamptz;
+update public.router_keys set retired_at = now()
+  where router = 'openrouter' and retired_at is null;
 alter table public.router_keys drop constraint if exists router_keys_router_check;
-alter table public.router_keys
-  add constraint router_keys_router_check check (router in ('concentrate', 'openrouter', 'merge'));
+alter table public.router_keys add constraint router_keys_router_check check (
+  router in ('concentrate', 'ai-gateway', 'merge')
+  or (router = 'openrouter' and retired_at is not null)
+);
+
+create or replace function public.guard_retired_router_key()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.router = 'openrouter' then
+      raise exception 'OpenRouter credentials are retired' using errcode = '23514';
+    end if;
+  elsif old.router = 'openrouter' then
+    if new.router is distinct from old.router
+       or new.encrypted_key is distinct from old.encrypted_key
+       or new.base_url is distinct from old.base_url
+       or new.search_verified is distinct from old.search_verified
+       or new.retired_at is null then
+      raise exception 'Retired router credentials cannot be reused or relabelled' using errcode = '23514';
+    end if;
+  elsif new.router = 'openrouter' then
+    raise exception 'OpenRouter credentials are retired' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists guard_retired_router_key on public.router_keys;
+create trigger guard_retired_router_key before insert or update on public.router_keys
+  for each row execute function public.guard_retired_router_key();
+
+-- Owners can still read/delete retired rows, but never rotate/relabel them.
+drop policy if exists "router_keys_owner" on public.router_keys;
+create policy "router_keys_owner" on public.router_keys
+  for all using (user_id = auth.uid()) with check (
+    user_id = auth.uid() and router in ('concentrate', 'ai-gateway', 'merge') and retired_at is null
+  );
+-- END AI_GATEWAY_CUTOVER_KEYS
 
 -- ---------- projects -------------------------------------------------
 create table if not exists public.projects (
@@ -675,9 +714,30 @@ alter table public.runs
 -- inline check on `add column if not exists` is skipped once the column exists,
 -- which would leave the allow-list unapplied on the deployments that need it.
 alter table public.runs add column if not exists route text;
+-- BEGIN AI_GATEWAY_CUTOVER_RUNS
 alter table public.runs drop constraint if exists runs_route_check;
-alter table public.runs
-  add constraint runs_route_check check (route is null or route in ('concentrate', 'openrouter'));
+alter table public.runs add constraint runs_route_check check (
+  route is null or route in ('concentrate', 'ai-gateway', 'merge', 'openrouter')
+);
+-- Keep old route provenance readable and let accepted old rows settle. A new
+-- dispatch cannot select the retired route, even via the service-role client.
+create or replace function public.guard_retired_run_route()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.route = 'openrouter' then
+      raise exception 'OpenRouter dispatch is retired' using errcode = '23514';
+    end if;
+  elsif new.route is distinct from old.route and (new.route = 'openrouter' or old.route = 'openrouter') then
+    raise exception 'Historical router provenance cannot be relabelled' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists guard_retired_run_route on public.runs;
+create trigger guard_retired_run_route before insert or update of route on public.runs
+  for each row execute function public.guard_retired_run_route();
+-- END AI_GATEWAY_CUTOVER_RUNS
 
 -- Whose credential paid for this run: 'trial' = the operator's shared key,
 -- 'own' = the account's own provider or router key. Null on rows from before
@@ -891,10 +951,8 @@ drop policy if exists "keys_owner" on public.provider_keys;
 create policy "keys_owner" on public.provider_keys
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- router_keys: owned by user, same shape as provider_keys.
-drop policy if exists "router_keys_owner" on public.router_keys;
-create policy "router_keys_owner" on public.router_keys
-  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- router_keys: the cutover section above owns self-scoped reads/deletes and
+-- active-only writes, including on a re-run of this schema.
 
 -- projects: the owner keeps every right they had.
 drop policy if exists "projects_owner" on public.projects;
