@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ConfigurationError, encryptSecret, keyHint } from "@/lib/crypto";
 import { humanError, verifyRouterKey, type RouterVerification } from "@/lib/llm";
-import { ROUTER_LIST, parseRouterId, routerProviders, unknownRouterMessage } from "@/lib/routers";
+import { ROUTER_LIST, parseRouterId, isRetiredRouterEndpoint, routerProviders, unknownRouterMessage } from "@/lib/routers";
 import { PROVIDERS } from "@/lib/models";
-import type { Provider, RouterId, RouterKeyPublic } from "@/lib/types";
+import type { Provider, RouterId, StoredRouterId, RouterKeyPublic } from "@/lib/types";
 import { ENCRYPTION_UNAVAILABLE_MESSAGE } from "@/lib/provider-keys";
 
 // ==================================================================
@@ -23,11 +23,12 @@ import { ENCRYPTION_UNAVAILABLE_MESSAGE } from "@/lib/provider-keys";
 
 export interface RouterKeySummary {
   id: string;
-  router: RouterId;
+  router: StoredRouterId;
   label: string | null;
   base_url: string | null;
   key_hint: string;
   search_verified: Provider[];
+  retired_at?: string | null;
   created_at: string;
 }
 
@@ -58,7 +59,7 @@ export function supportedRouters(): {
   }));
 }
 
-const SUMMARY_COLUMNS = "id, router, label, base_url, key_hint, search_verified, created_at";
+const SUMMARY_COLUMNS = "id, router, label, base_url, key_hint, search_verified, retired_at, created_at";
 
 /** The caller's stored router keys, hints only. Throws on a query error rather
  *  than returning [] — see the same note on listProviderKeys. */
@@ -135,6 +136,9 @@ export async function setRouterKey(
         message: "A router base URL must use https: your API key is sent to it.",
       };
     }
+    if (isRetiredRouterEndpoint(raw)) {
+      return { ok: false, code: "invalid", message: "This router endpoint is retired. Add a new Gateway credential." };
+    }
     baseUrl = raw.replace(/\/+$/, "");
   }
 
@@ -168,6 +172,7 @@ export async function setRouterKey(
         label,
         base_url: baseUrl,
         encrypted_key,
+        retired_at: null,
         key_hint,
         // Overwritten on every save, never merged: a rotated key is a different
         // credential and may have different model access, so carrying the old
@@ -194,7 +199,7 @@ export async function setRouterKey(
 export async function removeRouterKey(
   supabase: SupabaseClient,
   userId: string,
-  router: RouterId,
+  router: StoredRouterId,
 ): Promise<RouterKeySummary | null> {
   const { data, error } = await supabase
     .from("router_keys")
@@ -216,6 +221,7 @@ export function toPublic(key: RouterKeySummary): RouterKeyPublic {
     base_url: key.base_url,
     key_hint: key.key_hint,
     search_verified: key.search_verified ?? [],
+    retired_at: key.retired_at ?? null,
     created_at: key.created_at,
   };
 }

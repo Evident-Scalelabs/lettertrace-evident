@@ -180,7 +180,7 @@ describe("POST /api/onboarding/complete — the engine a new org starts on", () 
     // for a key the user had deliberately replaced with a router.
     vi.mocked(pickDefaultProvider).mockReturnValueOnce("google");
     vi.mocked(getRouterKeysPublic).mockResolvedValueOnce([
-      { router: "openrouter", search_verified: ["anthropic"] },
+      { router: "ai-gateway", search_verified: ["anthropic"] },
     ] as never);
 
     await POST(req(BASE));

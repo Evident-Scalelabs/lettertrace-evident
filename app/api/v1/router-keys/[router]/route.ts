@@ -5,7 +5,7 @@ import {
   setRouterKey,
   verificationSummary,
 } from "@/lib/router-keys";
-import { parseRouterId, unknownRouterMessage } from "@/lib/routers";
+import { parseStoredRouterId, unknownRouterMessage } from "@/lib/routers";
 import { deriveChannel, logApiRequest } from "@/lib/activity";
 import { captureServerEvent } from "@/lib/posthog-server";
 import { humanError } from "@/lib/llm";
@@ -98,7 +98,7 @@ export async function DELETE(request: Request, props: { params: Promise<{ router
   const auth = await requireApiAuth(request, "keys:write", "v1");
   if (auth instanceof Response) return auth;
 
-  const router = parseRouterId(params.router);
+  const router = parseStoredRouterId(params.router);
   if (!router) {
     return NextResponse.json({ error: unknownRouterMessage() }, { status: 400 });
   }

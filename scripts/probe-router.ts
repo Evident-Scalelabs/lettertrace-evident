@@ -77,12 +77,12 @@ function readKey(router: string, flags: Record<string, string>): string {
     if (key) return key;
     throw new Error(`--key-file ${flags["key-file"]} is empty.`);
   }
-  const specific = process.env[`ROUTER_API_KEY_${router.toUpperCase()}`]?.trim();
+  const specific = process.env[`ROUTER_API_KEY_${router.toUpperCase().replace(/-/g, "_")}`]?.trim();
   if (specific) return specific;
   const generic = process.env.ROUTER_API_KEY?.trim();
   if (generic) return generic;
   throw new Error(
-    `No key. Set $ROUTER_API_KEY_${router.toUpperCase()} (or $ROUTER_API_KEY), or pass --key-file <path>. ` +
+    `No key. Set $ROUTER_API_KEY_${router.toUpperCase().replace(/-/g, "_")} (or $ROUTER_API_KEY), or pass --key-file <path>. ` +
       "A key given as an argument would land in your shell history.",
   );
 }

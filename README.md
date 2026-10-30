@@ -234,12 +234,12 @@ whatever you pass at run time.
 
 ## LLM routers (one key, several assistants)
 
-Instead of a key per provider, you can connect a single **LLM router** (gateway) credential and reach several assistants through it. The bar for adding one is a live probe, not a docs page — both entries below were corrected by probing:
+Instead of a key per provider, you can connect a single **LLM router** (gateway) credential and reach several assistants through it. Each saved credential must pass the existing live reachability and native-search checks before it can fund grounded monitoring. Gateway support is prepared in source; live model/search acceptance remains pending keys:
 
 | Router | Engines it serves | Notes |
 |---|---|---|
 | **[Concentrate](https://concentrate.ai/)** | Claude, ChatGPT — both grounded | No markup on tokens, which matters when the key is yours. Mirrors both providers' native APIs, so a routed answer is the same request a direct key sends — forced browse included. |
-| **[OpenRouter](https://openrouter.ai/)** | Claude grounded; ChatGPT **ungrounded only** | 400+ models behind one key. Its Anthropic endpoint carries Claude's forced web search intact, but it cannot ask an OpenAI model for its *own* search — the alternatives route through Exa, a third-party service — so GPT here serves projects with web search off. Requests pin the upstream (`allow_fallbacks: false`) so routing changes can't move a trend line. |
+| **[Vercel AI Gateway](https://vercel.com/docs/ai-gateway)** | Claude and ChatGPT native-search candidates; Gemini ungrounded | Uses the existing Anthropic Messages / OpenAI Responses clients, exact model slugs and a per-key native-search probe. No third-party search substitute or model fallback. See the [cutover procedure](docs/ai-gateway-cutover.md) before upgrading existing installations. |
 
 Settings → **Or use one router key**, or from the terminal:
 
@@ -257,12 +257,12 @@ Three things are worth understanding before you rely on one.
 
 ```bash
 ROUTER_API_KEY_CONCENTRATE=... npx tsx scripts/probe-router.ts concentrate
-ROUTER_API_KEY_OPENROUTER=...  npx tsx scripts/probe-router.ts openrouter
+ROUTER_API_KEY_AI_GATEWAY=... npx tsx scripts/probe-router.ts ai-gateway
 ```
 
 The distinction that matters is **forced** versus merely enabled, and it is worth testing rather than reading off a gateway's docs. Probed against Concentrate on 2026-07-30: asked "what is the capital of France?" — a question the model answers from memory — its Responses endpoint with a forced `tool_choice` still returned two cited sources, while the same request with the tool only offered returned none, and so did chat-completions with `web_search_options`. A router that permits searching but can't be made to search will drift against a direct key, since the model answers familiar questions from recall and cites nothing.
 
-**Gemini, Google AI Overviews and Perplexity still need their own keys.** Not because the models are unreachable through a router, but because their measurement paths don't survive normalization: Gemini's grounding arrives as Google-specific chunks behind a redirect host, AI Overviews is a Gemini call plus a forced-search system prompt of ours, and Perplexity's search is the product rather than a parameter. Routed, all three would return an answer that is a different measurement wearing the same label.
+**Google grounding and Perplexity retain their existing routes.** Gateway's current compatible chat adapter serves ungrounded Gemini only; grounded Gemini and AI Overviews still require an existing capable Concentrate route or a direct Google key. Perplexity keeps its direct native-search path. A different search service cannot stand in for native grounding.
 
 Router keys are encrypted at rest exactly like provider keys, and resolution order is: your own provider key → your router key → the operator's trial key (if any) → nothing.
 

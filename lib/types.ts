@@ -6,7 +6,10 @@ export type Provider = "anthropic" | "openai" | "google" | "perplexity";
 // LLM routers are credentials, not providers, so they get their own union and
 // stay out of `Provider` — which is what keeps `runs.provider` meaning "whose
 // answer was this" rather than "who billed us". See lib/routers.ts.
-export type RouterId = "concentrate" | "openrouter" | "merge";
+export type RouterId = "concentrate" | "ai-gateway" | "merge";
+
+/** Read-only historical route and retired credential identity. */
+export type StoredRouterId = RouterId | "openrouter";
 
 export type RunStatus = "pending" | "running" | "completed" | "failed";
 
@@ -42,24 +45,26 @@ export interface ProviderKey {
 export interface RouterKey {
   id: string;
   user_id: string;
-  router: RouterId;
+  router: StoredRouterId;
   label: string | null;
   /** Only set for a router the user self-hosts; otherwise the registry's. */
   base_url: string | null;
   encrypted_key: string; // never sent to the client
   key_hint: string;
   search_verified: Provider[];
+  retired_at?: string | null;
   created_at: string;
 }
 
 // Safe shape returned to the browser (no ciphertext).
 export interface RouterKeyPublic {
   id: string;
-  router: RouterId;
+  router: StoredRouterId;
   label: string | null;
   base_url: string | null;
   key_hint: string;
   search_verified: Provider[];
+  retired_at?: string | null;
   created_at: string;
 }
 
@@ -169,7 +174,7 @@ export interface Run {
   model: string;
   /** The LLM router that carried this run, or null for a direct provider key.
    *  `provider` above is still the engine that answered — see lib/routers.ts. */
-  route: RouterId | null;
+  route: StoredRouterId | null;
   /** Whose credential paid: the operator's shared trial key, or the account's
    *  own. Null on runs from before this was recorded. */
   key_source: "own" | "trial" | null;

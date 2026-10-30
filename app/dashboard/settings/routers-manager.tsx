@@ -15,7 +15,7 @@ import {
 import { Badge, Button, Input, Spinner } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
 import { PROVIDERS } from "@/lib/models";
-import { ROUTER_LIST, routerProviders, type RouterInfo } from "@/lib/routers";
+import { ROUTER_LIST, isActiveRouterKey, routerLabel, routerProviders, type RouterInfo } from "@/lib/routers";
 import type { Provider, RouterId, RouterKeyPublic } from "@/lib/types";
 
 // One card per router, mirroring the provider-key cards. The difference is what
@@ -27,9 +27,9 @@ import type { Provider, RouterId, RouterKeyPublic } from "@/lib/types";
 // the corner pixel), so the object-contain letterboxing is invisible. Merge's
 // art is dark-on-white, hence the light tile with a hairline border to keep it
 // from dissolving into a light page.
-const ROUTER_LOGO: Record<RouterId, { src: string; tileClass: string }> = {
+const ROUTER_LOGO: Record<RouterId, { src: string | null; tileClass: string }> = {
   concentrate: { src: "/routers/concentrate.png", tileClass: "bg-[#0d0e10]" },
-  openrouter: { src: "/routers/openrouter.png", tileClass: "bg-[#04080a]" },
+  "ai-gateway": { src: null, tileClass: "bg-ink text-paper" },
   merge: { src: "/routers/merge.png", tileClass: "border border-ink/10 bg-white" },
 };
 
@@ -49,11 +49,40 @@ export default function RoutersManager({ keys }: { keys: RouterKeyPublic[] }) {
         <RouterCard
           key={info.id}
           info={info}
-          existing={keys.find((k) => k.router === info.id) ?? null}
+          existing={keys.find((k) => k.router === info.id && isActiveRouterKey(k)) ?? null}
         />
+      ))}
+      {keys.filter((key) => key.router === "openrouter" || key.retired_at).map((key) => (
+        <RetiredKey key={key.id} stored={key} />
       ))}
     </div>
   );
+}
+
+function RetiredKey({ stored }: { stored: RouterKeyPublic }) {
+  const router = useRouter();
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function remove() {
+    setRemoving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/router-keys/${stored.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Could not remove that retired key.");
+      router.refresh();
+    } catch {
+      setError("Could not remove that retired key.");
+    } finally {
+      setRemoving(false);
+    }
+  }
+  return <div className="rounded border border-ink/10 bg-paper p-5">
+    <p className="font-serif text-lg font-semibold">{routerLabel(stored.router)}</p>
+    <p className="mt-2 text-sm text-ink-faint">This saved credential cannot run new work. Add a new AI Gateway key above.</p>
+    <p className="my-3 font-mono text-sm">{stored.key_hint}</p>
+    <Button size="sm" onClick={remove} loading={removing}>Remove retired key</Button>
+    {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+  </div>;
 }
 
 function RouterCard({
@@ -136,7 +165,7 @@ function RouterCard({
             className={cn("h-11 w-11 shrink-0 overflow-hidden rounded", logo.tileClass)}
             aria-hidden
           >
-            <img src={logo.src} alt="" className="h-full w-full object-contain p-1" />
+            {logo.src ? <img src={logo.src} alt="" className="h-full w-full object-contain p-1" /> : <Globe className="h-full w-full p-2" />}
           </span>
           <div>
             <p className="font-serif text-lg font-semibold leading-tight text-ink">

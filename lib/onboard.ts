@@ -1,3 +1,4 @@
+import { isActiveRouterKey } from "@/lib/routers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getConfiguredProviders, getRouterKeysPublic } from "@/lib/data";
 import {
@@ -159,7 +160,7 @@ export async function pickProjectEngine(
   ]);
   const runnable = coveredProviders({
     direct: providers,
-    routers: routerKeys.map((k) => ({ router: k.router, searchVerified: k.search_verified ?? [] })),
+    routers: routerKeys.filter(isActiveRouterKey).map((k) => ({ router: k.router, searchVerified: k.search_verified ?? [] })),
     webSearch: true,
   });
   const envDefault = pickDefaultProvider();

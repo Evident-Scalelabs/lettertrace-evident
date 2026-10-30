@@ -1,4 +1,4 @@
-import type { Provider, RouterId } from "./types";
+import type { Provider, RouterId, StoredRouterId } from "./types";
 import { AI_OVERVIEWS_BACKING_MODEL, GOOGLE_AI_OVERVIEWS_MODEL, PROVIDERS } from "./models";
 
 // ==================================================================
@@ -66,12 +66,6 @@ export type RouteShape = "anthropic" | "openai-chat" | "openai-responses";
  *   surface. Utility calls are fine; monitored web-search runs are refused
  *   rather than silently run ungrounded.
  *
- * There was a third, 'plugin', for a router that substitutes its own gateway
- * flag for the provider's search params. It is real native browsing but cannot
- * be compelled the way `tool_choice` can, which makes it a weaker measurement
- * than a direct key — and it existed only for OpenRouter, which this build
- * doesn't ship. It was removed rather than left unreachable; bringing that
- * router back means bringing the tier and its warning copy back with it.
  */
 export type SearchSupport = "passthrough" | "none";
 
@@ -86,7 +80,7 @@ export interface RouterProviderSupport {
    * save time (the probe calls the mapped slug), never mid-run.
    */
   slugPrefix: string;
-  slugOverrides?: Record<string, string>;
+  slugOverrides?: Record<string, string | null>;
 }
 
 export interface RouterInfo {
@@ -199,65 +193,43 @@ export const ROUTERS: Record<RouterId, RouterInfo> = {
       },
     },
   },
-  openrouter: {
-    id: "openrouter",
-    label: "OpenRouter",
-    blurb: "400+ models behind one key. Claude is measurable; GPT is not.",
-    keyUrl: "https://openrouter.ai/keys",
-    docsUrl: "https://openrouter.ai/docs",
-    keyPrefix: "sk-or-v1-",
-    openaiBaseUrl: "https://openrouter.ai/api/v1",
-    anthropicBaseUrl: "https://openrouter.ai/api",
-    // Both x-api-key and bearer were accepted when probed; x-api-key is what the
-    // Anthropic SDK sends unprompted, so it is the one with fewer moving parts.
+  "ai-gateway": {
+    id: "ai-gateway",
+    label: "Vercel AI Gateway",
+    blurb: "One key for Claude, ChatGPT and ungrounded Gemini calls.",
+    keyUrl: "https://vercel.com/d/ai-gateway/api-keys",
+    docsUrl: "https://vercel.com/docs/ai-gateway",
+    keyPrefix: "",
+    openaiBaseUrl: "https://ai-gateway.vercel.sh/v1",
+    anthropicBaseUrl: "https://ai-gateway.vercel.sh",
     anthropicAuth: "x-api-key",
-    extraBody: (provider) => ({
-      // Pin the upstream and refuse fallbacks. OpenRouter price-load-balances a
-      // model across upstream hosts that can serve different quantizations, and
-      // moves between them silently. For a product whose output is a trend line
-      // that is a measurement change disguised as a visibility change: the
-      // mention rate shifts because routing shifted. Verified accepted — a
-      // pinned request came back "served by: OpenAI".
-      provider: { order: [OPENROUTER_UPSTREAM[provider]], allow_fallbacks: false },
-    }),
+    // Preserve the selected engine's native serving surface. No cross-model
+    // fallback, third-party search tool or old router policy is forwarded.
+    // Gateway's Google provider ID is `vertex` for the old route's Vertex
+    // serving intent (`google` names AI Studio). Verified in public endpoints.
+    extraBody: (provider) => ({ providerOptions: { gateway: { only: [provider === "google" ? "vertex" : provider] } } }),
     providers: {
       anthropic: {
-        // The Anthropic skin forwards the forced web_search tool intact. Probed
-        // 2026-07-31 with a live key: asked for the capital of France — a
-        // question answerable from memory — it still returned 13 cited sources.
-        shape: "anthropic",
-        search: "passthrough",
-        slugPrefix: "anthropic",
+        shape: "anthropic", search: "passthrough", slugPrefix: "anthropic",
+        // Gateway's versions use dots. These map the existing catalog without
+        // substituting a newer model; new model IDs still use the normal path.
+        slugOverrides: {
+          "claude-opus-4-8": "anthropic/claude-opus-4.8",
+          "claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
+          "claude-haiku-4-5": "anthropic/claude-haiku-4.5",
+        },
       },
       openai: {
-        // OpenRouter cannot ask an OpenAI model for its OWN web search:
-        // "The requested model does not support native web search. Use engine
-        // 'auto' or 'exa' instead." Both of those route the search through Exa,
-        // a third-party service — which measures something different from the
-        // provider's own browsing and breaks the README's claim that Lettertrace
-        // uses no search service beyond the provider's. So GPT through this
-        // router serves ungrounded projects and utility work only, and a
-        // grounded project is refused with a message naming the fix.
-        shape: "openai-chat",
-        search: "none",
-        slugPrefix: "openai",
+        shape: "openai-responses", search: "passthrough", slugPrefix: "openai",
+        // Absent from Gateway's public catalog at this cutover. Keep direct
+        // support, but refuse this route rather than silently change models.
+        slugOverrides: { "gpt-4-turbo": null },
       },
       google: {
-        // Routable, but never measurable. Probed 2026-08-02 with a live key:
-        // a plain call returns no structured sources at all, and the only thing
-        // that grounds is OpenRouter's `:online` suffix — its own Exa-backed
-        // web plugin, not Google's native grounding. Substituting that would
-        // mean measuring a different search engine and labelling it Gemini,
-        // which is the one thing this product must not do. So `search: "none"`,
-        // exactly as for OpenRouter's GPT path: a grounded project is refused
-        // with a message naming the fixes, an ungrounded one runs fine.
-        shape: "openai-chat",
-        search: "none",
-        // Our catalog carries Google's rolling ALIASES (gemini-flash-latest),
-        // which no router resolves — every model needs an explicit slug, and
-        // the `slugPrefix` fallback would produce a 404. A Google model added
-        // to the catalog without an entry here will not route.
-        slugPrefix: "google",
+        // The existing compatible chat adapter has no native Google-search
+        // wire shape. Keep it utility/ungrounded only; never substitute a
+        // gateway search service and label it Google's native grounding.
+        shape: "openai-chat", search: "none", slugPrefix: "google",
         slugOverrides: {
           "gemini-pro-latest": "google/gemini-2.5-pro",
           "gemini-flash-latest": "google/gemini-2.5-flash",
@@ -327,19 +299,11 @@ export const ROUTERS: Record<RouterId, RouterInfo> = {
   },
 };
 
-/** OpenRouter's upstream-provider names, for the pinning above. */
-const OPENROUTER_UPSTREAM: Record<Provider, string> = {
-  anthropic: "anthropic",
-  openai: "openai",
-  google: "google-vertex",
-  perplexity: "perplexity",
-};
-
 /** Display order for the settings cards and CLI listing: Merge leads. */
-export const ROUTER_LIST: RouterInfo[] = [ROUTERS.merge, ROUTERS.concentrate, ROUTERS.openrouter];
+export const ROUTER_LIST: RouterInfo[] = [ROUTERS.merge, ROUTERS.concentrate, ROUTERS["ai-gateway"]];
 
 export function isRouterId(value: string): value is RouterId {
-  return value === "concentrate" || value === "openrouter" || value === "merge";
+  return value === "concentrate" || value === "ai-gateway" || value === "merge";
 }
 
 /** Narrow an untrusted router value, or null. */
@@ -387,7 +351,9 @@ export function routerSlug(
   const support = routerSupport(router, provider);
   if (!support) return null;
   const slugModel = model === GOOGLE_AI_OVERVIEWS_MODEL ? AI_OVERVIEWS_BACKING_MODEL : model;
-  return support.slugOverrides?.[slugModel] ?? `${support.slugPrefix}/${slugModel}`;
+  return support.slugOverrides && Object.hasOwn(support.slugOverrides, slugModel)
+    ? support.slugOverrides[slugModel]
+    : `${support.slugPrefix}/${slugModel}`;
 }
 
 /**
@@ -478,7 +444,7 @@ export function routerRefusalMessage(
  * hand a client component — it is the non-secret half of DecryptedRouterKey.
  */
 export interface RouterCoverage {
-  router: RouterId;
+  router: StoredRouterId;
   searchVerified: Provider[];
 }
 
@@ -512,7 +478,8 @@ export function engineCoverage(
 ): EngineCoverage {
   if (opts.direct.includes(provider)) return { kind: "direct" };
 
-  const usable = opts.routers.find((rk) =>
+  const active = opts.routers.filter((rk): rk is RouterCoverage & { router: RouterId } => isRouterId(rk.router));
+  const usable = active.find((rk) =>
     routerCanMeasure(rk.router, provider, {
       webSearch: opts.webSearch,
       verified: rk.searchVerified,
@@ -523,7 +490,7 @@ export function engineCoverage(
   // Reachable, but not comparably. The run would be refused, so the refusal is
   // composed HERE, in the same words, rather than left for the user to discover
   // by running — and it names which of the three fixes applies.
-  const blocked = opts.routers.find((rk) => routerSupport(rk.router, provider) !== null);
+  const blocked = active.find((rk) => routerSupport(rk.router, provider) !== null);
   if (blocked) {
     return {
       kind: "unroutable",
@@ -553,4 +520,26 @@ export function coveredProviders(opts: {
     (p) => engineCoverage(p, opts).kind === "routed",
   );
   return Array.from(new Set([...opts.direct, ...routed]));
+}
+
+/** Historical IDs decode receipts and support deleting retired credentials only. */
+export function parseStoredRouterId(value: unknown): StoredRouterId | null {
+  return value === "openrouter" ? value : parseRouterId(value);
+}
+
+export function routerLabel(router: StoredRouterId): string {
+  return router === "openrouter" ? "OpenRouter (retired)" : ROUTERS[router].label;
+}
+
+/** Retired endpoints must never receive a new request through a saved override. */
+export function isRetiredRouterEndpoint(baseUrl: string): boolean {
+  const host = new URL(baseUrl).hostname.toLowerCase().replace(/\.$/, "");
+  return host === "openrouter.ai" || host.endsWith(".openrouter.ai");
+}
+
+/** Shared public-key readiness check; retired rows stay visible but fund no work. */
+export function isActiveRouterKey<T extends { router: StoredRouterId; retired_at?: string | null }>(
+  key: T,
+): key is T & { router: RouterId } {
+  return isRouterId(key.router) && !key.retired_at;
 }

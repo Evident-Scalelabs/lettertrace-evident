@@ -7,6 +7,8 @@ import {
   engineCoverage,
   isRouterId,
   parseRouterId,
+  parseStoredRouterId,
+  routerLabel,
   routerCanMeasure,
   routerProviders,
   routerRefusalMessage,
@@ -19,7 +21,7 @@ import type { Provider } from "@/lib/types";
 describe("router registry", () => {
   it("narrows only known routers", () => {
     expect(isRouterId("concentrate")).toBe(true);
-    expect(isRouterId("openrouter")).toBe(true);
+    expect(isRouterId("ai-gateway")).toBe(true);
     expect(isRouterId("merge")).toBe(true);
     expect(isRouterId("litellm")).toBe(false);
     expect(parseRouterId(42)).toBeNull();
@@ -29,7 +31,7 @@ describe("router registry", () => {
   it("lists every registered router, Merge first", () => {
     // ROUTER_LIST is hand-ordered for display, which means a new registry
     // entry can be silently forgotten from it — this catches that.
-    expect(ROUTER_LIST.map((r) => r.id)).toEqual(["merge", "concentrate", "openrouter"]);
+    expect(ROUTER_LIST.map((r) => r.id)).toEqual(["merge", "concentrate", "ai-gateway"]);
     expect(new Set(ROUTER_LIST.map((r) => r.id))).toEqual(new Set(Object.keys(ROUTERS)));
   });
 
@@ -45,14 +47,14 @@ describe("router registry", () => {
 
   it("serves only the engines whose measurement survives a gateway", () => {
     expect(routerProviders("concentrate")).toEqual(["anthropic", "openai", "google"]);
-    expect(routerProviders("openrouter")).toEqual(["anthropic", "openai", "google"]);
+    expect(routerProviders("ai-gateway")).toEqual(["anthropic", "openai", "google"]);
     expect(routerProviders("merge")).toEqual(["anthropic", "openai", "google"]);
     // Perplexity stays out: its search is always on and inseparable from the
     // answer, so a routed Perplexity call cannot be the ungrounded fallback the
     // `search: "none"` tier relies on. Gemini earns its place only in that
     // tier — reachable, never grounded (see the routed Gemini cases below).
     expect(routerSupport("concentrate", "perplexity")).toBeNull();
-    expect(routerSupport("openrouter", "perplexity")).toBeNull();
+    expect(routerSupport("ai-gateway", "perplexity")).toBeNull();
     expect(routerSupport("merge", "perplexity")).toBeNull();
   });
 
@@ -70,19 +72,15 @@ describe("router registry", () => {
   // what the router accepts or every routed Claude call 401s. Both probed live.
   it("records the auth header for each Anthropic surface", () => {
     expect(ROUTERS.concentrate.anthropicAuth).toBe("bearer");
-    expect(ROUTERS.openrouter.anthropicAuth).toBe("x-api-key");
+    expect(ROUTERS["ai-gateway"].anthropicAuth).toBe("x-api-key");
     // Probed 2026-08-03: x-api-key authenticated a grounded Claude call.
     expect(ROUTERS.merge.anthropicAuth).toBe("x-api-key");
   });
 
-  // Probed 2026-07-31 against a live key. OpenRouter carries Claude's forced
-  // web_search (13 sources on a question answerable from memory) but cannot ask
-  // an OpenAI model for its OWN search — "does not support native web search,
-  // use engine auto or exa" — and Exa is a third-party service that measures
-  // something different. So GPT through OpenRouter is ungrounded-only.
+  // Candidate wire capability; each credential must still pass the real search probe.
   it("records what each router can actually ground", () => {
-    expect(routerSupport("openrouter", "anthropic")?.search).toBe("passthrough");
-    expect(routerSupport("openrouter", "openai")?.search).toBe("none");
+    expect(routerSupport("ai-gateway", "anthropic")?.search).toBe("passthrough");
+    expect(routerSupport("ai-gateway", "openai")?.search).toBe("passthrough");
     expect(routerSupport("concentrate", "anthropic")?.search).toBe("passthrough");
     expect(routerSupport("concentrate", "openai")?.search).toBe("passthrough");
     // Merge, probed 2026-08-03 (Claude: 9 sources) and 2026-08-04 (GPT: forced
@@ -95,26 +93,22 @@ describe("router registry", () => {
 
   it("still serves ungrounded work on the engine it cannot ground", () => {
     // A refusal would be wrong: nothing is being claimed about the live web.
-    expect(routerCanMeasure("openrouter", "openai", { webSearch: false, verified: [] })).toBe(true);
-    expect(routerCanMeasure("openrouter", "openai", { webSearch: true, verified: ["openai"] })).toBe(false);
+    expect(routerCanMeasure("ai-gateway", "openai", { webSearch: false, verified: [] })).toBe(true);
+    expect(routerCanMeasure("ai-gateway", "openai", { webSearch: true, verified: [] })).toBe(false);
   });
 });
 
-describe("OpenRouter request body", () => {
-  it("pins the upstream and forbids fallbacks", () => {
-    // Unpinned, OpenRouter price-load-balances across upstreams that can serve
-    // different quantizations, so a trend line moves when routing moves.
-    // Verified accepted: a pinned request came back "served by: OpenAI".
-    const body = ROUTERS.openrouter.extraBody!("anthropic", { webSearch: true }) as {
-      provider: { order: string[]; allow_fallbacks: boolean };
-    };
-    expect(body.provider).toEqual({ order: ["anthropic"], allow_fallbacks: false });
+describe("AI Gateway request body", () => {
+  it("pins the selected native upstream without retired-router policy fields", () => {
+    expect(ROUTERS["ai-gateway"].extraBody!("anthropic", { webSearch: true })).toEqual({
+      providerOptions: { gateway: { only: ["anthropic"] } },
+    });
   });
 
   it("never asks for a web plugin", () => {
     // The plugin would route through Exa for OpenAI models, which is a
     // third-party search service and a different measurement.
-    const body = ROUTERS.openrouter.extraBody!("openai", { webSearch: true }) as Record<string, unknown>;
+    const body = ROUTERS["ai-gateway"].extraBody!("openai", { webSearch: true }) as Record<string, unknown>;
     expect(body.plugins).toBeUndefined();
   });
 
@@ -204,16 +198,15 @@ describe("routerRefusalMessage", () => {
     expect(message).toContain("Anthropic (Claude) and OpenAI (ChatGPT)");
   });
 
-  // OpenRouter cannot ask an OpenAI model for its own web search — its only
-  // options route through Exa — so this is the real case, not a stub.
+  // Google remains ungrounded-only on the current compatible adapter.
   it("offers turning grounding off when search can't be requested", () => {
-    const message = routerRefusalMessage("openrouter", "openai", {
+    const message = routerRefusalMessage("ai-gateway", "google", {
       webSearch: true,
       verified: [],
     });
     expect(message).toContain("Turn off web search");
-    expect(message).toContain("OpenRouter");
-    expect(message).toContain("OpenAI (ChatGPT)");
+    expect(message).toContain("AI Gateway");
+    expect(message).toContain("Google (Gemini)");
   });
 
   it("points at a re-check when only the probe is missing", () => {
@@ -236,8 +229,8 @@ describe("engineCoverage", () => {
     router: "concentrate",
     searchVerified: ["anthropic", "openai"],
   };
-  const openrouter: RouterCoverage = {
-    router: "openrouter",
+  const gateway: RouterCoverage = {
+    router: "ai-gateway",
     searchVerified: ["anthropic"],
   };
 
@@ -260,29 +253,27 @@ describe("engineCoverage", () => {
   });
 
   it("covers a grounded engine only through a router confirmed to ground it", () => {
-    // OpenRouter reaches GPT but cannot ask it for its own web search, so a
-    // grounded project is 'unroutable' — reachable, not measurable — and the
-    // reason carries the fix rather than a bare refusal.
+    // The saved credential confirmed Claude only; GPT needs its own probe.
     const grounded = engineCoverage("openai", {
       direct: [],
-      routers: [openrouter],
+      routers: [gateway],
       webSearch: true,
     });
     expect(grounded.kind).toBe("unroutable");
-    expect(grounded.kind === "unroutable" && grounded.reason).toContain("Turn off web search");
+    expect(grounded.kind === "unroutable" && grounded.reason).toContain("Re-check the key");
 
     // Same credentials, same engine, grounding off: nothing is being claimed
     // about the live web, so the router serves it.
     expect(
-      engineCoverage("openai", { direct: [], routers: [openrouter], webSearch: false }),
-    ).toEqual({ kind: "routed", router: "openrouter" });
+      engineCoverage("openai", { direct: [], routers: [gateway], webSearch: false }),
+    ).toEqual({ kind: "routed", router: "ai-gateway" });
   });
 
   it("prefers a router that can measure over one that merely reaches", () => {
     expect(
       engineCoverage("openai", {
         direct: [],
-        routers: [openrouter, concentrate],
+        routers: [gateway, concentrate],
         webSearch: true,
       }),
     ).toEqual({ kind: "routed", router: "concentrate" });
@@ -294,7 +285,7 @@ describe("engineCoverage", () => {
     expect(
       engineCoverage("perplexity", {
         direct: [],
-        routers: [concentrate, openrouter],
+        routers: [concentrate, gateway],
         webSearch: true,
       }),
     ).toEqual({ kind: "none" });
@@ -318,9 +309,8 @@ describe("coveredProviders", () => {
   });
 
   it("drops an engine the routers can reach but not ground", () => {
-    const routers: RouterCoverage[] = [{ router: "openrouter", searchVerified: ["anthropic"] }];
-    // Grounded: only Claude survives the gateway. GPT and Gemini are both
-    // reachable and both `search: "none"`, so both drop out.
+    const routers: RouterCoverage[] = [{ router: "ai-gateway", searchVerified: ["anthropic"] }];
+    // Only Claude was verified. GPT remains unverified; Google is unsupported for search.
     expect(coveredProviders({ direct: [], routers, webSearch: true })).toEqual(["anthropic"]);
     expect(coveredProviders({ direct: [], routers, webSearch: false })).toEqual([
       "anthropic",
@@ -334,7 +324,7 @@ describe("coveredProviders", () => {
       direct: [],
       routers: [
         { router: "concentrate", searchVerified: ["anthropic", "openai"] },
-        { router: "openrouter", searchVerified: ["anthropic"] },
+        { router: "ai-gateway", searchVerified: ["anthropic"] },
       ],
       webSearch: false,
     });
@@ -347,15 +337,13 @@ describe("coveredProviders", () => {
 // ---------------------------------------------------------------------------
 // Routed Gemini (LET-176).
 //
-// Both routers can SERVE Gemini and neither can GROUND it — probed 2026-08-02
-// against live keys. These cases pin that distinction, because the tempting
-// fix (accept OpenRouter's `:online` Exa plugin as grounding) would silently
-// swap the search engine underneath a number labelled "Gemini".
+// Gateway and Merge serve ungrounded Gemini. No third-party search tool may
+// stand in for native Google grounding on this compatible adapter.
 // ---------------------------------------------------------------------------
 
 describe("routed Gemini", () => {
   it("is reachable through every router", () => {
-    for (const router of ["openrouter", "concentrate", "merge"] as const) {
+    for (const router of ["ai-gateway", "concentrate", "merge"] as const) {
       expect(routerProviders(router)).toContain("google");
     }
   });
@@ -363,7 +351,7 @@ describe("routed Gemini", () => {
   it("is selectable for an ungrounded project", () => {
     const cov = engineCoverage("google", {
       direct: [],
-      routers: [{ router: "openrouter", searchVerified: [] }],
+      routers: [{ router: "ai-gateway", searchVerified: [] }],
       webSearch: false,
     });
     expect(cov.kind).toBe("routed");
@@ -375,7 +363,7 @@ describe("routed Gemini", () => {
     for (const verified of [[], ["google"] as Provider[]]) {
       const cov = engineCoverage("google", {
         direct: [],
-        routers: [{ router: "openrouter", searchVerified: verified }],
+        routers: [{ router: "ai-gateway", searchVerified: verified }],
         webSearch: true,
       });
       expect(cov.kind).toBe("unroutable");
@@ -386,7 +374,7 @@ describe("routed Gemini", () => {
     // Google's catalog ids are rolling aliases no router resolves, so each one
     // needs an explicit override; the slugPrefix fallback would 404.
     for (const model of ["gemini-pro-latest", "gemini-flash-latest", "gemini-flash-lite-latest"]) {
-      const slug = routerSlug("openrouter", "google", model);
+      const slug = routerSlug("ai-gateway", "google", model);
       expect(slug).toMatch(/^google\/gemini-2\.5-(pro|flash|flash-lite)$/);
     }
   });
@@ -397,12 +385,29 @@ describe("routed Gemini", () => {
     // can only be MEASURED where the router carries Google's native search — just
     // Concentrate. On the others it gets a slug but is refused for the grounded
     // run it always is, so it stays on a direct key.
-    for (const router of ["openrouter", "concentrate", "merge"] as const) {
+    for (const router of ["ai-gateway", "concentrate", "merge"] as const) {
       expect(routerSlug(router, "google", GOOGLE_AI_OVERVIEWS_MODEL)).toBe("google/gemini-2.5-flash");
     }
     const grounded = { webSearch: true, verified: ["google"] as Provider[] };
     expect(routerCanMeasure("concentrate", "google", grounded)).toBe(true);
-    expect(routerCanMeasure("openrouter", "google", grounded)).toBe(false);
+    expect(routerCanMeasure("ai-gateway", "google", grounded)).toBe(false);
     expect(routerCanMeasure("merge", "google", grounded)).toBe(false);
+  });
+});
+
+describe("retired provider compatibility", () => {
+  it("reads old provenance without admitting a dispatch option or picker coverage", () => {
+    expect(isRouterId("openrouter")).toBe(false);
+    expect(parseRouterId("openrouter")).toBeNull();
+    expect(parseStoredRouterId("openrouter")).toBe("openrouter");
+    expect(routerLabel("openrouter")).toBe("OpenRouter (retired)");
+    expect(engineCoverage("anthropic", { direct: [], routers: [
+      { router: "openrouter", searchVerified: ["anthropic"] },
+    ], webSearch: false })).toEqual({ kind: "none" });
+  });
+
+  it("maps the existing Claude versions exactly and refuses an unavailable GPT route", () => {
+    expect(routerSlug("ai-gateway", "anthropic", "claude-haiku-4-5")).toBe("anthropic/claude-haiku-4.5");
+    expect(routerSlug("ai-gateway", "openai", "gpt-4-turbo")).toBeNull();
   });
 });

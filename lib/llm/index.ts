@@ -9,6 +9,8 @@ import {
 } from "@/lib/models";
 import {
   ROUTERS,
+  isRouterId,
+  isRetiredRouterEndpoint,
   routerSlug,
   routerSupport,
   type RouteShape,
@@ -252,6 +254,7 @@ function planRoute(
   model: string,
   opts: { webSearch: boolean },
 ): RoutePlan {
+  if (!isRouterId(route.router)) throw new RouteError("This router is retired or unsupported.");
   const info = ROUTERS[route.router];
   const support = routerSupport(route.router, provider);
   const slug = routerSlug(route.router, provider, model);
@@ -275,6 +278,7 @@ function planRoute(
     baseUrl = base ?? info.openaiBaseUrl;
   }
 
+  if (isRetiredRouterEndpoint(baseUrl)) throw new RouteError("This router endpoint is retired.");
   return {
     router: route.router,
     shape: support.shape,
@@ -364,7 +368,7 @@ async function openaiChat(
     // old field made every ungrounded 5.6 call a hard 400. Probed 2026-08-18:
     // max_completion_tokens is accepted by gpt-4o, gpt-4o-mini and both 5.6
     // models directly, and by Concentrate's chat surface for openai AND google
-    // slugs. (OpenRouter/Merge not re-probed; both mirror OpenAI's surface.)
+    // slugs. (Other compatible routers remain separately verified.)
     max_completion_tokens: maxTokens,
     messages,
     ...(json ? { response_format: { type: "json_object" } } : {}),
@@ -704,12 +708,9 @@ async function runQueryUnmeasured(
 /**
  * An answer through a router's OpenAI-compatible endpoint.
  *
- * The router standardizes cited sources into `message.annotations` as
- * `url_citation` entries, so unlike the direct OpenAI path (which reads the
- * Responses API's own annotation shape) there is one shape to parse regardless
- * of which upstream answered. Sources still come from the provider's native
- * browsing — the router's `engine: "native"` pin, set in the registry, is what
- * keeps a third-party search service out of the measurement.
+ * This chat surface serves ungrounded work only in the current registry.
+ * Native search uses Messages/Responses and their original citation parsers.
+ * No gateway search plugin is a substitute for the selected engine's browsing.
  */
 async function gatewayQuery(
   apiKey: string,
@@ -869,7 +870,7 @@ async function anthropicWebSearch(
       { maxRetries: 0 },
     );
   } catch (err) {
-    if (!isToolChoiceMismatch(err)) throw err;
+    if (!isToolChoiceMismatch(err) || plan?.router === "ai-gateway") throw err;
     // Retry exactly once, unforced: still offer the tool (harmless if the
     // gateway keeps dropping it, and lets the model use it if this call
     // happens to get through intact) but stop mandating the browse, so the
@@ -952,8 +953,9 @@ async function openaiWebSearch(
   // "required". Gemini's other path (chat-completions `web_search_options`) only
   // HINTS, so it grounded at random (~1/4); on this forced tool it grounds 12/12.
   const isGemini = plan?.slug?.startsWith("google/") ?? false;
-  const searchTool = isGemini ? { type: "web_search" } : { type: "web_search_preview" };
-  const searchToolChoice: unknown = isGemini ? "required" : { type: "web_search_preview" };
+  const searchTool = isGemini || plan?.router === "ai-gateway"
+    ? { type: "web_search" } : { type: "web_search_preview" };
+  const searchToolChoice: unknown = isGemini ? "required" : { type: searchTool.type };
   // tool_choice "required" hard-forces OpenAI, but Concentrate maps our
   // web_search tool to Gemini's {googleSearch:{}}, which is model-decides — so
   // "required" doesn't strictly force a Gemini search (per Concentrate). It

@@ -34,8 +34,8 @@ import { createRequire } from "node:module";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { decryptSecret } from "../lib/crypto";
-import { routerProviders, routerSupport } from "../lib/routers";
-import type { Project, Provider } from "../lib/types";
+import { routerProviders, routerSupport, isRouterId } from "../lib/routers";
+import type { Project, Provider, RouterId } from "../lib/types";
 
 // lib/data wraps its readers in React's cache(), which only exists inside
 // Next's runtime — importing it from a plain Node script throws before any
@@ -87,16 +87,18 @@ const SUPABASE_URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
 const SERVICE_ROLE = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 requireEnv("ENCRYPTION_KEY"); // used by decryptSecret below
 
-const ROUTER = (flag("router") ?? "concentrate") as "concentrate" | "openrouter";
+const routerArg = flag("router") ?? "concentrate";
+if (!isRouterId(routerArg)) throw new Error("Unknown or retired router");
+const ROUTER: RouterId = routerArg;
 const keyFile = flag("key-file");
 const ROUTER_KEY = (
   keyFile
     ? readFileSync(keyFile, "utf8")
-    : process.env[`ROUTER_API_KEY_${ROUTER.toUpperCase()}`] ?? process.env.ROUTER_API_KEY ?? ""
+    : process.env[`ROUTER_API_KEY_${ROUTER.toUpperCase().replace(/-/g, "_")}`] ?? process.env.ROUTER_API_KEY ?? ""
 ).trim();
 if (!ROUTER_KEY) {
   console.error(
-    `No router key. Set $ROUTER_API_KEY_${ROUTER.toUpperCase()} (or $ROUTER_API_KEY), or pass --key-file <path>.`,
+    `No router key. Set $ROUTER_API_KEY_${ROUTER.toUpperCase().replace(/-/g, "_")} (or $ROUTER_API_KEY), or pass --key-file <path>.`,
   );
   process.exit(2);
 }
@@ -133,9 +135,8 @@ function section(title: string): void {
 
 /**
  * The engines THIS router is expected to ground — per router, not blanket.
- * OpenRouter carries Claude's native search but cannot ask an OpenAI model for
- * its own, so demanding both would assert something untrue of a
- * correctly-working credential.
+ * Coverage comes from the current registry; a provider must pass its native
+ * search check before the credential may fund grounded monitoring.
  */
 function groundable(): Provider[] {
   return routerProviders(ROUTER).filter((p) => routerSupport(ROUTER, p)?.search === "passthrough");
