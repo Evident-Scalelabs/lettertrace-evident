@@ -98,6 +98,14 @@ not an offline gate and was not invoked during this key-free packet.
 
 ## Coordinated release, held pending keys
 
+Read-only Railway source inspection on 2026-10-30 confirms production service
+`lettertrace` in project `lettertrace-evident` follows this repository's `master`
+branch with `checkSuites: false`. Merging can therefore deploy immediately. The
+GitHub container workflow also publishes its default-branch `latest` image on a
+`master` push. Hold this merge until the release owner has explicitly decoupled
+deployment or the coordinated cutover is ready. Merge authorization alone does
+not apply the required database migration or lift the live-cutover hold.
+
 1. Stop affected AI admission on every instance, including utilities/key
    verification, scheduled work and continuations. Drain accepted work and keep
    its original results/charges; do not issue replacement calls to finish a queue.
